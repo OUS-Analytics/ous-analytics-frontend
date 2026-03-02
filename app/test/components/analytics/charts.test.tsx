@@ -1,7 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import {
-  MetricsTrendChart,
-} from '@/features/metrics/components/charts/MetricsTrendChart';
+import { render, screen, within } from '@testing-library/react';
+import { MetricsTrendChart } from '@/features/metrics/components/charts/MetricsTrendChart';
 import { MajorDistributionChart } from '@/features/metrics/components/charts/MajorDistributionChart';
 import { StudentTypeDistributionChart } from '@/features/metrics/components/charts/StudentTypeDistributionChart';
 import { SchoolDistributionChart } from '@/features/metrics/components/charts/SchoolDistributionChart';
@@ -12,6 +10,8 @@ import {
   AvgGPAByCohortChart,
   AvgGPAByMajorChart,
 } from '@/features/metrics/components/major-analytics-charts';
+import { selectCohortOptions } from '@/features/metrics/components/major-analytics/selectors';
+import { CohortSummaryTable } from '@/features/metrics/components/CohortSummaryTable';
 import type { MajorCohortRecord } from '@/features/metrics/types';
 
 const trendData = [
@@ -19,9 +19,7 @@ const trendData = [
   { period: 'Spring 2024', total: 1100 },
 ];
 
-const forecastData = [
-  { period: 'Fall 2024', total: 1200, isForecasted: true },
-];
+const forecastData = [{ period: 'Fall 2024', total: 1200, isForecasted: true }];
 
 const majorData = [
   { major: 'Biology', count: 200 },
@@ -42,7 +40,9 @@ const typeData = [
 const cohortData: MajorCohortRecord[] = [
   {
     major: 'Biology',
-    cohort: 'FTIC 2021',
+    cohort: 'FTIC 2024',
+    cohortKey: 'FTIC_2024',
+    cohortYear: 2024,
     avgGPA: 3.1,
     avgCredits: 12,
     studentCount: 100,
@@ -50,25 +50,45 @@ const cohortData: MajorCohortRecord[] = [
   {
     major: 'Biology',
     cohort: 'FTIC 2022',
+    cohortKey: 'FTIC_2022',
+    cohortYear: 2022,
     avgGPA: 3.2,
     avgCredits: 14,
     studentCount: 80,
   },
   {
     major: 'Chemistry',
-    cohort: 'FTIC 2021',
+    cohort: 'FTIC 2023',
+    cohortKey: 'FTIC_2023',
+    cohortYear: 2023,
     avgGPA: 2.9,
     avgCredits: 13,
     studentCount: 50,
+  },
+  {
+    major: 'Physics',
+    cohort: 'Entering Class 2027',
+    cohortKey: 'FTIC_2027',
+    cohortYear: 2027,
+    avgGPA: 3.3,
+    avgCredits: 16,
+    studentCount: 40,
+  },
+  {
+    major: 'Chemistry',
+    cohort: 'UNKNOWN',
+    cohortKey: 'UNKNOWN',
+    cohortYear: null,
+    avgGPA: 3.1,
+    avgCredits: 12,
+    studentCount: 25,
   },
 ];
 
 describe('analytics charts', () => {
   test('AnalyticsTrendChart renders with and without forecasts', () => {
     const { rerender } = render(<MetricsTrendChart data={trendData} />);
-    expect(
-      screen.getByText('Student Trends Over Time')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Student Trends Over Time')).toBeInTheDocument();
     expect(screen.queryByText('Forecasted')).not.toBeInTheDocument();
 
     rerender(
@@ -82,14 +102,10 @@ describe('analytics charts', () => {
     expect(screen.getByText('Students by Major')).toBeInTheDocument();
 
     render(<StudentTypeDistributionChart data={typeData} />);
-    expect(
-      screen.getByText('Student Type Distribution')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Student Type Distribution')).toBeInTheDocument();
 
     render(<SchoolDistributionChart data={schoolData} />);
-    expect(
-      screen.getByText('Students by School/College')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Students by School/College')).toBeInTheDocument();
   });
 
   test('ForecastSection and analytics charts render', () => {
@@ -107,9 +123,7 @@ describe('analytics charts', () => {
     render(<AvgGPAByCohortChart data={cohortData} />);
     render(<AvgCreditsByCohortChart data={cohortData} />);
 
-    expect(
-      screen.getByText('Average GPA by Major')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Average GPA by Major')).toBeInTheDocument();
     expect(
       screen.getByText('Average Credits Earned by Major')
     ).toBeInTheDocument();
@@ -119,5 +133,42 @@ describe('analytics charts', () => {
     expect(
       screen.getByText('Average Credits Earned by Major and FTIC Cohort')
     ).toBeInTheDocument();
+  });
+
+  test('cohort charts and summary tabs use the same normalized cohort ordering', () => {
+    render(
+      <>
+        <AvgGPAByCohortChart data={cohortData} />
+        <CohortSummaryTable data={cohortData} />
+      </>
+    );
+
+    const expectedOrder = [
+      'FTIC 2022',
+      'FTIC 2023',
+      'FTIC 2024',
+      'FTIC 2027',
+      'Unknown',
+    ];
+    expect(
+      selectCohortOptions(cohortData).map((option) => option.cohortLabel)
+    ).toEqual(expectedOrder);
+    const tabLabels = screen
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent?.trim() ?? '');
+    expect(tabLabels).toEqual(expectedOrder);
+
+    const chartCard = screen
+      .getByText('Average GPA by Major and FTIC Cohort')
+      .closest('.bg-card');
+    expect(chartCard).not.toBeNull();
+
+    const legend = within(chartCard as HTMLElement).getByTestId(
+      'cohort-legend'
+    );
+    const legendLabels = within(legend)
+      .getAllByTestId('cohort-legend-label')
+      .map((label) => label.textContent?.trim() ?? '');
+    expect(legendLabels).toEqual(expectedOrder);
   });
 });

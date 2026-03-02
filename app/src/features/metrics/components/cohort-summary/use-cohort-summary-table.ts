@@ -1,28 +1,50 @@
 import { useMemo, useState } from 'react';
 import type { MajorCohortRecord } from '@/features/metrics/types';
-import { selectCohortLabels } from '../major-analytics/selectors';
+import {
+  selectCohortKey,
+  selectCohortOptions,
+  type CohortOption,
+} from '../major-analytics/selectors';
 
 export type SortKey = 'major' | 'avgGPA' | 'avgCredits' | 'studentCount';
 
 export function useCohortSummaryTable(data: MajorCohortRecord[]) {
-  const cohorts = useMemo(() => selectCohortLabels(data), [data]);
-  const [selectedCohort, setSelectedCohort] = useState<string | undefined>(
-    undefined
-  );
+  const cohorts = useMemo(() => selectCohortOptions(data), [data]);
+  const [selectedCohortKey, setSelectedCohortKey] = useState<
+    string | undefined
+  >(undefined);
   const [sortKey, setSortKey] = useState<SortKey>('studentCount');
   const [sortAsc, setSortAsc] = useState(false);
 
-  const activeCohort =
-    selectedCohort && cohorts.includes(selectedCohort)
-      ? selectedCohort
-      : cohorts[0];
+  const latestKnownCohort = useMemo(() => {
+    const knownCohorts = cohorts.filter(
+      (cohort) => cohort.cohortYear !== null && !cohort.isCatchAll
+    );
+
+    return knownCohorts.at(-1) ?? cohorts[0];
+  }, [cohorts]);
+
+  const activeCohort = useMemo<CohortOption | undefined>(() => {
+    if (selectedCohortKey) {
+      const selected = cohorts.find(
+        (cohort) => cohort.cohortKey === selectedCohortKey
+      );
+      if (selected) {
+        return selected;
+      }
+    }
+
+    return latestKnownCohort;
+  }, [cohorts, latestKnownCohort, selectedCohortKey]);
 
   const filteredData = useMemo(() => {
     if (!activeCohort) {
       return [];
     }
 
-    const cohortData = data.filter((record) => record.cohort === activeCohort);
+    const cohortData = data.filter(
+      (record) => selectCohortKey(record) === activeCohort.cohortKey
+    );
 
     return [...cohortData].sort((a, b) => {
       const aValue = a[sortKey];
@@ -57,8 +79,8 @@ export function useCohortSummaryTable(data: MajorCohortRecord[]) {
 
   return {
     cohorts,
-    selectedCohort: activeCohort,
-    setSelectedCohort,
+    selectedCohort: activeCohort?.cohortKey,
+    setSelectedCohort: setSelectedCohortKey,
     filteredData,
     totalStudents,
     handleSort,

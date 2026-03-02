@@ -97,6 +97,18 @@ export interface MigrationRecord {
 export interface MajorCohortRecord {
   major: string;
   cohort: string;
+  cohortKey: string;
+  cohortYear: number | null;
+  avgGPA: number | null;
+  avgCredits: number | null;
+  studentCount: number;
+}
+
+export interface MajorCohortApiRecord {
+  major: string;
+  cohort: string;
+  cohortKey?: string;
+  cohortYear?: number | null;
   avgGPA: number | null;
   avgCredits: number | null;
   studentCount: number;
@@ -164,7 +176,7 @@ export interface AnalyticsRecordsResponse {
 
 export interface MajorCohortRecordsResponse {
   datasetId: string;
-  records: MajorCohortRecord[];
+  records: MajorCohortApiRecord[];
 }
 
 export interface MajorsAnalyticsResponse {

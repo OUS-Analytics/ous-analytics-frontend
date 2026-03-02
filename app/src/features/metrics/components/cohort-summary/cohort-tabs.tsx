@@ -1,7 +1,9 @@
+import type { CohortOption } from '../major-analytics/selectors';
+
 interface CohortTabsProps {
-  cohorts: string[];
+  cohorts: CohortOption[];
   selectedCohort: string | undefined;
-  onSelect: (cohort: string) => void;
+  onSelect: (cohortKey: string) => void;
 }
 
 export function CohortTabs({
@@ -21,17 +23,17 @@ export function CohortTabs({
     >
       {cohorts.map((cohort) => (
         <button
-          key={cohort}
+          key={cohort.cohortKey}
           role="tab"
-          aria-selected={selectedCohort === cohort}
-          onClick={() => onSelect(cohort)}
+          aria-selected={selectedCohort === cohort.cohortKey}
+          onClick={() => onSelect(cohort.cohortKey)}
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-            selectedCohort === cohort
+            selectedCohort === cohort.cohortKey
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          {cohort}
+          {cohort.cohortLabel}
         </button>
       ))}
     </div>

@@ -5,6 +5,8 @@ const data = [
   {
     major: 'Biology',
     cohort: 'FTIC 2024',
+    cohortKey: 'FTIC_2024',
+    cohortYear: 2024,
     avgGPA: 3.2,
     avgCredits: 15,
     studentCount: 200,
@@ -12,6 +14,8 @@ const data = [
   {
     major: 'Chemistry',
     cohort: 'FTIC 2024',
+    cohortKey: 'FTIC_2024',
+    cohortYear: 2024,
     avgGPA: 2.8,
     avgCredits: 18,
     studentCount: 120,
@@ -19,6 +23,8 @@ const data = [
   {
     major: 'Biology',
     cohort: 'FTIC 2023',
+    cohortKey: 'FTIC_2023',
+    cohortYear: 2023,
     avgGPA: 3.0,
     avgCredits: 14,
     studentCount: 150,
@@ -70,6 +76,8 @@ describe('CohortSummaryTable', () => {
           {
             major: 'Physics',
             cohort: 'FTIC 2025',
+            cohortKey: 'FTIC_2025',
+            cohortYear: 2025,
             avgGPA: null,
             avgCredits: null,
             studentCount: 10,

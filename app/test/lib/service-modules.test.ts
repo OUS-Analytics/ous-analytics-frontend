@@ -481,7 +481,9 @@ describe('service modules', () => {
     );
     await expect(getActiveDataset()).resolves.toBeNull();
 
-    mockApiClient.get.mockRejectedValueOnce(new ServiceError('NETWORK_ERROR', 'nope'));
+    mockApiClient.get.mockRejectedValueOnce(
+      new ServiceError('NETWORK_ERROR', 'nope')
+    );
     await expect(getActiveDataset()).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
     });
@@ -561,9 +563,35 @@ describe('service modules', () => {
           {
             major: 'Biology',
             cohort: 'FTIC 2024',
+            cohortKey: 'FTIC_2024',
+            cohortYear: 2024,
             avgGPA: null,
             avgCredits: null,
             studentCount: 4,
+          },
+          {
+            major: 'Chemistry',
+            cohort: 'n/a',
+            avgGPA: 3.1,
+            avgCredits: 15,
+            studentCount: 2,
+          },
+          {
+            major: 'Physics',
+            cohort: 'Entering Class 2027',
+            cohortKey: 'FTIC_2027',
+            avgGPA: 3.5,
+            avgCredits: 16,
+            studentCount: 1,
+          },
+          {
+            major: 'Math',
+            cohort: '',
+            cohortKey: 'FTIC_2026',
+            cohortYear: 2026,
+            avgGPA: 3.7,
+            avgCredits: 14,
+            studentCount: 2,
           },
         ],
       });
@@ -573,10 +601,196 @@ describe('service modules', () => {
       { major: 'Biology', count: 4 },
       { major: 'Chemistry', count: 2 },
     ]);
-    expect(response.cohortRecords[0]).toMatchObject({
-      avgGPA: 0,
-      avgCredits: 0,
-    });
+    expect(response.cohortRecords).toEqual([
+      {
+        major: 'Biology',
+        cohort: 'FTIC 2024',
+        cohortKey: 'FTIC_2024',
+        cohortYear: 2024,
+        avgGPA: 0,
+        avgCredits: 0,
+        studentCount: 4,
+      },
+      {
+        major: 'Chemistry',
+        cohort: 'Unknown',
+        cohortKey: 'UNKNOWN',
+        cohortYear: null,
+        avgGPA: 3.1,
+        avgCredits: 15,
+        studentCount: 2,
+      },
+      {
+        major: 'Physics',
+        cohort: 'Entering Class 2027',
+        cohortKey: 'FTIC_2027',
+        cohortYear: 2027,
+        avgGPA: 3.5,
+        avgCredits: 16,
+        studentCount: 1,
+      },
+      {
+        major: 'Math',
+        cohort: 'FTIC 2026',
+        cohortKey: 'FTIC_2026',
+        cohortYear: 2026,
+        avgGPA: 3.7,
+        avgCredits: 14,
+        studentCount: 2,
+      },
+    ]);
+  });
+
+  test('getMajorsAnalytics preserves other and custom non-year cohorts with stable keys', async () => {
+    mockApiClient.get
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        records: [],
+      })
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        records: [
+          {
+            major: 'Biology',
+            cohort: 'other',
+            avgGPA: 3.25,
+            avgCredits: 15,
+            studentCount: 3,
+          },
+          {
+            major: 'Chemistry',
+            cohort: 'Legacy Cohort',
+            avgGPA: 3.1,
+            avgCredits: 12,
+            studentCount: 5,
+          },
+          {
+            major: 'Physics',
+            cohort: '***',
+            avgGPA: 2.9,
+            avgCredits: 11,
+            studentCount: 2,
+          },
+        ],
+      });
+
+    const response = await getMajorsAnalytics('dataset-1');
+
+    expect(response.cohortRecords).toEqual([
+      {
+        major: 'Biology',
+        cohort: 'other',
+        cohortKey: 'OTHER',
+        cohortYear: null,
+        avgGPA: 3.25,
+        avgCredits: 15,
+        studentCount: 3,
+      },
+      {
+        major: 'Chemistry',
+        cohort: 'Legacy Cohort',
+        cohortKey: 'LEGACY_COHORT',
+        cohortYear: null,
+        avgGPA: 3.1,
+        avgCredits: 12,
+        studentCount: 5,
+      },
+      {
+        major: 'Physics',
+        cohort: 'Unknown',
+        cohortKey: 'UNKNOWN',
+        cohortYear: null,
+        avgGPA: 2.9,
+        avgCredits: 11,
+        studentCount: 2,
+      },
+    ]);
+  });
+
+  test('getMajorsAnalytics applies blank-label fallbacks without overriding provided keys', async () => {
+    mockApiClient.get
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        records: [],
+      })
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        records: [
+          {
+            major: 'Biology',
+            cohort: '',
+            cohortKey: 'UNKNOWN',
+            avgGPA: 3.25,
+            avgCredits: 15,
+            studentCount: 3,
+          },
+          {
+            major: 'Chemistry',
+            cohort: '',
+            cohortKey: 'OTHER',
+            avgGPA: 3.1,
+            avgCredits: 12,
+            studentCount: 5,
+          },
+          {
+            major: 'Physics',
+            cohort: '',
+            cohortKey: 'LEGACY',
+            avgGPA: 2.9,
+            avgCredits: 11,
+            studentCount: 2,
+          },
+          {
+            major: 'Math',
+            cohort: '',
+            cohortYear: 2028,
+            avgGPA: 3.4,
+            avgCredits: 14,
+            studentCount: 4,
+          },
+        ],
+      });
+
+    const response = await getMajorsAnalytics('dataset-1');
+
+    expect(response.cohortRecords).toEqual([
+      {
+        major: 'Biology',
+        cohort: 'Unknown',
+        cohortKey: 'UNKNOWN',
+        cohortYear: null,
+        avgGPA: 3.25,
+        avgCredits: 15,
+        studentCount: 3,
+      },
+      {
+        major: 'Chemistry',
+        cohort: 'Other',
+        cohortKey: 'OTHER',
+        cohortYear: null,
+        avgGPA: 3.1,
+        avgCredits: 12,
+        studentCount: 5,
+      },
+      {
+        major: 'Physics',
+        cohort: 'Unknown',
+        cohortKey: 'LEGACY',
+        cohortYear: null,
+        avgGPA: 2.9,
+        avgCredits: 11,
+        studentCount: 2,
+      },
+      {
+        major: 'Math',
+        cohort: 'FTIC 2028',
+        cohortKey: 'FTIC_2028',
+        cohortYear: 2028,
+        avgGPA: 3.4,
+        avgCredits: 14,
+        studentCount: 4,
+      },
+    ]);
   });
 
   test('getMigrationAnalytics combines options and records with semester filter', async () => {
@@ -587,7 +801,9 @@ describe('service modules', () => {
       })
       .mockResolvedValueOnce({
         datasetId: 'dataset-1',
-        records: [{ fromMajor: 'A', toMajor: 'B', semester: 'Fall 2024', count: 1 }],
+        records: [
+          { fromMajor: 'A', toMajor: 'B', semester: 'Fall 2024', count: 1 },
+        ],
       });
 
     const response = await getMigrationAnalytics('dataset-1', {
@@ -834,7 +1050,10 @@ describe('service modules', () => {
       });
 
     const file = new File(['a,b\n1,2'], 'latest.csv', { type: 'text/csv' });
-    const created = await createDatasetSubmission({ file, activateOnSuccess: false });
+    const created = await createDatasetSubmission({
+      file,
+      activateOnSuccess: false,
+    });
     const status = await getDatasetSubmissionStatus('sub/1');
     await listSubmissions({
       page: 2,
@@ -880,16 +1099,20 @@ describe('service modules', () => {
       '/api/v1/submissions/sub%2F1',
       { signal: undefined }
     );
-    expect(mockApiClient.get).toHaveBeenNthCalledWith(2, '/api/v1/submissions', {
-      query: {
-        page: 2,
-        pageSize: 25,
-        status: 'failed',
-        createdAfter: '2026-01-01T00:00:00Z',
-        createdBefore: '2026-01-31T00:00:00Z',
-      },
-      signal: undefined,
-    });
+    expect(mockApiClient.get).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/submissions',
+      {
+        query: {
+          page: 2,
+          pageSize: 25,
+          status: 'failed',
+          createdAfter: '2026-01-01T00:00:00Z',
+          createdBefore: '2026-01-31T00:00:00Z',
+        },
+        signal: undefined,
+      }
+    );
     expect(mockApiClient.get).toHaveBeenNthCalledWith(
       3,
       '/api/v1/submissions/bulk/job%2F1',

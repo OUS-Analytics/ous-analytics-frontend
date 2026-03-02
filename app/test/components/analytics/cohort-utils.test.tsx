@@ -6,6 +6,8 @@ const cohortData = [
   {
     major: 'Biology',
     cohort: 'FTIC 2024',
+    cohortKey: 'FTIC_2024',
+    cohortYear: 2024,
     avgGPA: 3.2,
     avgCredits: 15,
     studentCount: 200,
@@ -13,6 +15,8 @@ const cohortData = [
   {
     major: 'Chemistry',
     cohort: 'FTIC 2024',
+    cohortKey: 'FTIC_2024',
+    cohortYear: 2024,
     avgGPA: 2.8,
     avgCredits: 18,
     studentCount: 120,
@@ -20,6 +24,8 @@ const cohortData = [
   {
     major: 'Biology',
     cohort: 'FTIC 2023',
+    cohortKey: 'FTIC_2023',
+    cohortYear: 2023,
     avgGPA: 3.0,
     avgCredits: 14,
     studentCount: 150,
@@ -29,7 +35,11 @@ const cohortData = [
 describe('cohort UI helpers', () => {
   test('CohortTabs returns null with no cohort options', () => {
     const { container } = render(
-      <CohortTabs cohorts={[]} selectedCohort={undefined} onSelect={jest.fn()} />
+      <CohortTabs
+        cohorts={[]}
+        selectedCohort={undefined}
+        onSelect={jest.fn()}
+      />
     );
     expect(container.firstChild).toBeNull();
   });
@@ -38,8 +48,21 @@ describe('cohort UI helpers', () => {
     const onSelect = jest.fn();
     render(
       <CohortTabs
-        cohorts={['FTIC 2024', 'FTIC 2023']}
-        selectedCohort="FTIC 2024"
+        cohorts={[
+          {
+            cohortKey: 'FTIC_2024',
+            cohortLabel: 'FTIC 2024',
+            cohortYear: 2024,
+            isCatchAll: false,
+          },
+          {
+            cohortKey: 'FTIC_2023',
+            cohortLabel: 'FTIC 2023',
+            cohortYear: 2023,
+            isCatchAll: false,
+          },
+        ]}
+        selectedCohort="FTIC_2024"
         onSelect={onSelect}
       />
     );
@@ -53,7 +76,7 @@ describe('cohort UI helpers', () => {
     act(() => {
       unselected.click();
     });
-    expect(onSelect).toHaveBeenCalledWith('FTIC 2023');
+    expect(onSelect).toHaveBeenCalledWith('FTIC_2023');
   });
 
   test('useCohortSummaryTable handles empty data and sort transitions', () => {
@@ -68,19 +91,19 @@ describe('cohort UI helpers', () => {
     expect(result.current.totalStudents).toBe(0);
 
     rerender({ data: cohortData });
-    expect(result.current.selectedCohort).toBe('FTIC 2024');
+    expect(result.current.selectedCohort).toBe('FTIC_2024');
     expect(result.current.filteredData[0].major).toBe('Biology');
 
     act(() => {
-      result.current.setSelectedCohort('FTIC 2023');
+      result.current.setSelectedCohort('FTIC_2023');
     });
-    expect(result.current.selectedCohort).toBe('FTIC 2023');
+    expect(result.current.selectedCohort).toBe('FTIC_2023');
     expect(result.current.filteredData).toHaveLength(1);
 
     act(() => {
-      result.current.setSelectedCohort('FTIC 1900');
+      result.current.setSelectedCohort('FTIC_1900');
     });
-    expect(result.current.selectedCohort).toBe('FTIC 2024');
+    expect(result.current.selectedCohort).toBe('FTIC_2024');
 
     act(() => {
       result.current.handleSort('major');

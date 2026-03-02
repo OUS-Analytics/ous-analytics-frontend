@@ -13,17 +13,25 @@ import {
 import type { MajorCohortRecord } from '@/features/metrics/types';
 import { MajorAnalyticsChartCard } from './chart-card';
 import { chartTooltipStyle, getCohortColor } from './chart-theme';
-import { selectCohortLabels, selectCohortRowsByMajor } from './selectors';
+import { selectCohortOptions, selectCohortRowsByMajor } from './selectors';
 
 interface MajorAnalyticsChartsProps {
   data: MajorCohortRecord[];
 }
 
 export function AvgGPAByCohortChart({ data }: MajorAnalyticsChartsProps) {
-  const cohorts = useMemo(() => selectCohortLabels(data), [data]);
+  const cohorts = useMemo(() => selectCohortOptions(data), [data]);
   const chartData = useMemo(
     () => selectCohortRowsByMajor(data, 'avgGPA'),
     [data]
+  );
+  const cohortLabelByKey = useMemo(
+    () =>
+      cohorts.reduce<Record<string, string>>((acc, cohort) => {
+        acc[cohort.cohortKey] = cohort.cohortLabel;
+        return acc;
+      }, {}),
+    [cohorts]
   );
   const chartHeight = Math.max(500, chartData.length * 52);
 
@@ -32,19 +40,21 @@ export function AvgGPAByCohortChart({ data }: MajorAnalyticsChartsProps) {
       title="Average GPA by Major and FTIC Cohort"
       subtitle="Comparison across cohort years"
     >
-      <div className="flex items-center gap-4 pb-3">
-        {cohorts.map((cohort) => (
-          <div key={cohort} className="flex items-center gap-1.5">
+      <div data-testid="cohort-legend" className="flex items-center gap-4 pb-3">
+        {cohorts.map((cohort, index) => (
+          <div key={cohort.cohortKey} className="flex items-center gap-1.5">
             <div
               className="h-2.5 w-2.5 rounded-sm"
               style={{
-                backgroundColor: getCohortColor(
-                  cohort,
-                  cohorts.indexOf(cohort)
-                ),
+                backgroundColor: getCohortColor(cohort.cohortLabel, index),
               }}
             />
-            <span className="text-xs text-muted-foreground">{cohort}</span>
+            <span
+              data-testid="cohort-legend-label"
+              className="text-xs text-muted-foreground"
+            >
+              {cohort.cohortLabel}
+            </span>
           </div>
         ))}
       </div>
@@ -81,14 +91,14 @@ export function AvgGPAByCohortChart({ data }: MajorAnalyticsChartsProps) {
               contentStyle={chartTooltipStyle}
               formatter={(value: number, name: string) => [
                 value.toFixed(2),
-                name,
+                cohortLabelByKey[name] ?? name,
               ]}
             />
-            {cohorts.map((cohort) => (
+            {cohorts.map((cohort, index) => (
               <Bar
-                key={cohort}
-                dataKey={cohort}
-                fill={getCohortColor(cohort, cohorts.indexOf(cohort))}
+                key={cohort.cohortKey}
+                dataKey={cohort.cohortKey}
+                fill={getCohortColor(cohort.cohortLabel, index)}
                 radius={[0, 3, 3, 0]}
                 barSize={10}
               />
