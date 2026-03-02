@@ -11,7 +11,11 @@ import {
 } from 'react';
 import { getActiveDataset, getDatasetById } from '@/features/datasets/api';
 import { getForecastsAnalytics } from '@/features/forecasts/api';
-import { getMajorsAnalytics } from '@/features/majors/api';
+import {
+  getMajorsAnalytics,
+  type MajorsFilterParams,
+} from '@/features/majors/api';
+import { useMajorsFiltersParam } from '@/features/filters/hooks/useMajorsFiltersParam';
 import { getMigrationAnalytics } from '@/features/migration/api';
 import { getDatasetOverview } from '@/features/overview/api';
 import {
@@ -308,6 +312,8 @@ export function useDashboardMetricsModel() {
   const [migrationSemester, setMigrationSemester] = useState<
     string | undefined
   >(undefined);
+  const { filters: majorsFilters, setFilters: setMajorsFilters } =
+    useMajorsFiltersParam();
   const [forecastHorizon, setForecastHorizon] = useState(
     DEFAULT_FORECAST_HORIZON
   );
@@ -326,6 +332,9 @@ export function useDashboardMetricsModel() {
     AsyncResourceState<DatasetOverviewResponse>
   >(initialAsyncResourceState);
   const [majorsState, setMajorsState] = useState<
+    AsyncResourceState<MajorsAnalyticsResponse>
+  >(initialAsyncResourceState);
+  const [unfilteredMajorsState, setUnfilteredMajorsState] = useState<
     AsyncResourceState<MajorsAnalyticsResponse>
   >(initialAsyncResourceState);
   const [migrationState, setMigrationState] = useState<
@@ -659,6 +668,7 @@ export function useDashboardMetricsModel() {
     async (
       datasetId: string | undefined,
       snapshotId: string | undefined,
+      filters: MajorsFilterParams,
       signal?: AbortSignal
     ) => {
       if (!datasetId) {
@@ -666,12 +676,41 @@ export function useDashboardMetricsModel() {
         return;
       }
 
+      const filterKey = [
+        filters.academicPeriod ?? 'all',
+        filters.school ?? 'all',
+        filters.studentType ?? 'all',
+      ].join(':');
+
       await loadDashboardResource({
         datasetId,
-        requestKey: `majors:${datasetId}:${snapshotId ?? 'none'}`,
+        requestKey: `majors:${datasetId}:${snapshotId ?? 'none'}:${filterKey}`,
         measureKey: 'dashboard:panel:majors:load',
         fallbackMessage: 'Unable to load majors analytics.',
         setResourceState: setMajorsState,
+        request: () => getMajorsAnalytics(datasetId, { filters, signal }),
+      });
+    },
+    [loadDashboardResource]
+  );
+
+  const loadUnfilteredMajors = useCallback(
+    async (
+      datasetId: string | undefined,
+      snapshotId: string | undefined,
+      signal?: AbortSignal
+    ) => {
+      if (!datasetId) {
+        resetAsyncResourceState(setUnfilteredMajorsState);
+        return;
+      }
+
+      await loadDashboardResource({
+        datasetId,
+        requestKey: `majors-unfiltered:${datasetId}:${snapshotId ?? 'none'}`,
+        measureKey: 'dashboard:panel:majors-unfiltered:load',
+        fallbackMessage: 'Unable to load majors filter options.',
+        setResourceState: setUnfilteredMajorsState,
         request: () => getMajorsAnalytics(datasetId, { signal }),
       });
     },
@@ -756,7 +795,17 @@ export function useDashboardMetricsModel() {
           options.snapshotId ?? undefined,
           signal
         ),
-        loadMajors(options.datasetId, options.snapshotId ?? undefined, signal),
+        loadMajors(
+          options.datasetId,
+          options.snapshotId ?? undefined,
+          majorsFilters,
+          signal
+        ),
+        loadUnfilteredMajors(
+          options.datasetId,
+          options.snapshotId ?? undefined,
+          signal
+        ),
         loadMigration(
           options.datasetId,
           options.snapshotId ?? undefined,
@@ -777,6 +826,8 @@ export function useDashboardMetricsModel() {
       loadMajors,
       loadMigration,
       loadOverview,
+      loadUnfilteredMajors,
+      majorsFilters,
       migrationSemester,
     ]
   );
@@ -1286,12 +1337,30 @@ export function useDashboardMetricsModel() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadMajors(analyticsDatasetId, analyticsSnapshotId, controller.signal);
+    void loadMajors(
+      analyticsDatasetId,
+      analyticsSnapshotId,
+      majorsFilters,
+      controller.signal
+    );
 
     return () => {
       controller.abort();
     };
-  }, [analyticsDatasetId, analyticsSnapshotId, loadMajors]);
+  }, [analyticsDatasetId, analyticsSnapshotId, loadMajors, majorsFilters]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadUnfilteredMajors(
+      analyticsDatasetId,
+      analyticsSnapshotId,
+      controller.signal
+    );
+
+    return () => {
+      controller.abort();
+    };
+  }, [analyticsDatasetId, analyticsSnapshotId, loadUnfilteredMajors]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1342,6 +1411,54 @@ export function useDashboardMetricsModel() {
       ? migrationSemester
       : undefined;
 
+  const majorsFilterOptions = useMemo(() => {
+    const records = unfilteredMajorsState.data?.analyticsRecords ?? [];
+    const semesterTuples: { label: string; year: number; termIndex: number }[] =
+      [];
+    const seenSemesters = new Set<string>();
+    const schools = new Set<string>();
+    const studentTypes = new Set<string>();
+
+    const termOrder: Record<string, number> = {
+      spring: 1,
+      summer: 2,
+      fall: 3,
+    };
+
+    for (const record of records) {
+      if (record.semester) {
+        const label = `${record.semester} ${record.year}`;
+        if (!seenSemesters.has(label)) {
+          seenSemesters.add(label);
+          semesterTuples.push({
+            label,
+            year: record.year,
+            termIndex: termOrder[record.semester.toLowerCase()] ?? 0,
+          });
+        }
+      }
+      if (record.school) {
+        schools.add(record.school);
+      }
+      if (record.studentType) {
+        studentTypes.add(record.studentType);
+      }
+    }
+
+    semesterTuples.sort((a, b) => {
+      if (b.year !== a.year) {
+        return b.year - a.year;
+      }
+      return b.termIndex - a.termIndex;
+    });
+
+    return {
+      academicPeriodOptions: semesterTuples.map((t) => t.label),
+      schoolOptions: Array.from(schools).sort(),
+      studentTypeOptions: Array.from(studentTypes).sort(),
+    };
+  }, [unfilteredMajorsState.data]);
+
   const dashboardViewState: DashboardViewState = getDashboardViewState(
     datasetState,
     readModelState
@@ -1357,8 +1474,8 @@ export function useDashboardMetricsModel() {
     [analyticsDatasetId, analyticsSnapshotId, loadOverview]
   );
   const retryMajors = useCallback(
-    () => loadMajors(analyticsDatasetId, analyticsSnapshotId),
-    [analyticsDatasetId, analyticsSnapshotId, loadMajors]
+    () => loadMajors(analyticsDatasetId, analyticsSnapshotId, majorsFilters),
+    [analyticsDatasetId, analyticsSnapshotId, loadMajors, majorsFilters]
   );
   const retryMigration = useCallback(
     () =>
@@ -1481,6 +1598,9 @@ export function useDashboardMetricsModel() {
     majorsData: majorsState.data,
     majorsLoading: majorsState.loading,
     majorsError: majorsState.error,
+    majorsFilters,
+    setMajorsFilters,
+    majorsFilterOptions,
     retryMajors,
     migrationData: migrationState.data,
     migrationLoading: migrationState.loading,

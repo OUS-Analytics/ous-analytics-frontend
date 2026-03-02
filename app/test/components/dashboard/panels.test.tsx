@@ -556,6 +556,14 @@ describe('dashboard panel states', () => {
   test('MajorsPanel handles loading/error/empty and renders populated data', () => {
     const onRetry = jest.fn();
     const onReadModelRetry = jest.fn();
+    const onFiltersChange = jest.fn();
+    const defaultFilterProps = {
+      filters: {},
+      onFiltersChange,
+      academicPeriodOptions: [] as string[],
+      schoolOptions: [] as string[],
+      studentTypeOptions: [] as string[],
+    };
 
     const { rerender } = render(
       <MajorsPanel
@@ -563,6 +571,7 @@ describe('dashboard panel states', () => {
         loading={true}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="ready"
         readModelStatus={null}
         readModelError={null}
@@ -578,6 +587,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={{ code: 'UNKNOWN', message: 'Majors failed', retryable: true }}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="ready"
         readModelStatus={null}
         readModelError={null}
@@ -594,6 +604,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="processing"
         readModelStatus="building"
         readModelError={null}
@@ -615,6 +626,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="processing"
         readModelStatus="building"
         readModelError={null}
@@ -632,6 +644,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="failed"
         readModelStatus="failed"
         readModelError={{
@@ -654,6 +667,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="failed"
         readModelStatus="failed"
         readModelError={null}
@@ -675,6 +689,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="ready"
         readModelStatus={null}
         readModelError={null}
@@ -708,6 +723,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="ready"
         readModelStatus={null}
         readModelError={null}
@@ -732,6 +748,7 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         onRetry={onRetry}
+        {...defaultFilterProps}
         readModelState="ready"
         readModelStatus={null}
         readModelError={null}
@@ -741,6 +758,97 @@ describe('dashboard panel states', () => {
     );
     expect(screen.getByText('Top Major: N/A')).toBeInTheDocument();
     expect(screen.getByText('Avg per Major: 0')).toBeInTheDocument();
+  });
+
+  test('MajorsPanel shows filter panel when data is available and empty state when filters yield no results', () => {
+    const onRetry = jest.fn();
+    const onReadModelRetry = jest.fn();
+    const onFiltersChange = jest.fn();
+
+    const { rerender } = render(
+      <MajorsPanel
+        data={{
+          datasetId: 'dataset-1',
+          analyticsRecords: [],
+          majorDistribution: [{ major: 'Biology', count: 100 }],
+          cohortRecords: [],
+        }}
+        loading={false}
+        error={null}
+        onRetry={onRetry}
+        filters={{}}
+        onFiltersChange={onFiltersChange}
+        academicPeriodOptions={['Fall 2025', 'Spring 2026']}
+        schoolOptions={['School of Engineering']}
+        studentTypeOptions={['FTIC', 'Transfer']}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={onReadModelRetry}
+      />
+    );
+
+    expect(screen.getByTestId('majors-filter-panel')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select semester')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select school')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select student type')).toBeInTheDocument();
+
+    rerender(
+      <MajorsPanel
+        data={{
+          datasetId: 'dataset-1',
+          analyticsRecords: [],
+          majorDistribution: [],
+          cohortRecords: [],
+        }}
+        loading={false}
+        error={null}
+        onRetry={onRetry}
+        filters={{ academicPeriod: 'Fall 2025' }}
+        onFiltersChange={onFiltersChange}
+        academicPeriodOptions={['Fall 2025', 'Spring 2026']}
+        schoolOptions={['School of Engineering']}
+        studentTypeOptions={['FTIC', 'Transfer']}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={onReadModelRetry}
+      />
+    );
+
+    expect(
+      screen.getByText('No results for selected filters')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Try adjusting your semester, school, or student type filters.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  test('MajorsPanel hides filter panel when data is null', () => {
+    render(
+      <MajorsPanel
+        data={null}
+        loading={false}
+        error={null}
+        onRetry={jest.fn()}
+        filters={{}}
+        onFiltersChange={jest.fn()}
+        academicPeriodOptions={[]}
+        schoolOptions={[]}
+        studentTypeOptions={[]}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('majors-filter-panel')).not.toBeInTheDocument();
   });
 
   test('MigrationPanel handles states and semester change callback', () => {

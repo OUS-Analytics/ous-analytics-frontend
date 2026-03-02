@@ -452,6 +452,63 @@ describe('useDashboardMetricsModel', () => {
     expect(result.current.noDataset).toBe(false);
   });
 
+  test('derives majorsFilterOptions from analytics records', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'Dataset 1',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockSuccessfulDashboardReads('dataset-1');
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [
+        {
+          year: 2025,
+          semester: 'Fall',
+          major: 'Biology',
+          school: 'School of Science',
+          studentType: 'FTIC',
+          count: 100,
+        },
+        {
+          year: 2026,
+          semester: 'Spring',
+          major: 'Chemistry',
+          school: 'School of Engineering',
+          studentType: 'Transfer',
+          count: 50,
+        },
+      ],
+      majorDistribution: [
+        { major: 'Biology', count: 100 },
+        { major: 'Chemistry', count: 50 },
+      ],
+      cohortRecords: [],
+    });
+
+    const { result } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(result.current.majorsData?.datasetId).toBe('dataset-1');
+    });
+
+    expect(result.current.majorsFilterOptions.academicPeriodOptions).toEqual([
+      'Spring 2026',
+      'Fall 2025',
+    ]);
+    expect(result.current.majorsFilterOptions.schoolOptions).toEqual([
+      'School of Engineering',
+      'School of Science',
+    ]);
+    expect(result.current.majorsFilterOptions.studentTypeOptions).toEqual([
+      'FTIC',
+      'Transfer',
+    ]);
+  });
+
   test('maps DATASET_NOT_READY to processing state and refreshes reads when dataset becomes ready', async () => {
     jest.useFakeTimers();
     try {
@@ -2832,6 +2889,7 @@ describe('useDashboardMetricsModel', () => {
         signal: expect.any(Object),
       });
       expect(mockGetMajorsAnalytics).toHaveBeenCalledWith('dataset-2', {
+        filters: {},
         signal: expect.any(Object),
       });
       expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-2', {
@@ -2916,19 +2974,12 @@ describe('useDashboardMetricsModel', () => {
         schoolDistribution: [],
         trend: [],
       });
-    mockGetMajorsAnalytics
-      .mockResolvedValueOnce({
-        datasetId: 'dataset-1',
-        analyticsRecords: [],
-        majorDistribution: [],
-        cohortRecords: [],
-      })
-      .mockResolvedValueOnce({
-        datasetId: 'dataset-2',
-        analyticsRecords: [],
-        majorDistribution: [],
-        cohortRecords: [],
-      });
+    mockGetMajorsAnalytics.mockImplementation(async (datasetId) => ({
+      datasetId,
+      analyticsRecords: [],
+      majorDistribution: [],
+      cohortRecords: [],
+    }));
     mockGetMigrationAnalytics
       .mockResolvedValueOnce({
         datasetId: 'dataset-1',
@@ -2978,7 +3029,7 @@ describe('useDashboardMetricsModel', () => {
 
     await waitFor(() => {
       expect(mockGetDatasetOverview).toHaveBeenCalledTimes(2);
-      expect(mockGetMajorsAnalytics).toHaveBeenCalledTimes(2);
+      expect(mockGetMajorsAnalytics).toHaveBeenCalledTimes(4);
       expect(mockGetMigrationAnalytics).toHaveBeenCalledTimes(2);
       expect(mockGetForecastsAnalytics).toHaveBeenCalledTimes(2);
     });
@@ -2986,9 +3037,20 @@ describe('useDashboardMetricsModel', () => {
     expect(mockGetDatasetOverview).toHaveBeenLastCalledWith('dataset-2', {
       signal: expect.any(Object),
     });
-    expect(mockGetMajorsAnalytics).toHaveBeenLastCalledWith('dataset-2', {
-      signal: expect.any(Object),
-    });
+    const hasDataset2FilteredMajorsRequest =
+      mockGetMajorsAnalytics.mock.calls.some(
+        ([datasetId, options]) =>
+          datasetId === 'dataset-2' &&
+          options?.filters !== undefined &&
+          Object.keys(options.filters).length === 0
+      );
+    const hasDataset2UnfilteredMajorsRequest =
+      mockGetMajorsAnalytics.mock.calls.some(
+        ([datasetId, options]) =>
+          datasetId === 'dataset-2' && options?.filters === undefined
+      );
+    expect(hasDataset2FilteredMajorsRequest).toBe(true);
+    expect(hasDataset2UnfilteredMajorsRequest).toBe(true);
     expect(mockGetMigrationAnalytics).toHaveBeenLastCalledWith('dataset-2', {
       semester: undefined,
       signal: expect.any(Object),
@@ -3318,6 +3380,7 @@ describe('useDashboardMetricsModel', () => {
     });
     expect(result.current.snapshotDateEmptyState).toBeNull();
     expect(mockGetMajorsAnalytics).toHaveBeenCalledWith('dataset-1', {
+      filters: {},
       signal: expect.any(Object),
     });
     expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-1', {
@@ -3419,6 +3482,7 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetMajorsAnalytics).toHaveBeenCalledWith('dataset-2', {
+      filters: {},
       signal: expect.any(Object),
     });
     expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-2', {
@@ -3516,6 +3580,7 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetMajorsAnalytics).toHaveBeenCalledWith('dataset-1', {
+      filters: {},
       signal: expect.any(Object),
     });
     expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-1', {

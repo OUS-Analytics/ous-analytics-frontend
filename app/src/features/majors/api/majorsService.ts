@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api/client';
 import {
+  buildGuardedQuery,
   encodePathSegment,
   toApiPath,
   withDatasetCache,
@@ -11,7 +12,20 @@ import type {
   MajorsAnalyticsResponse,
 } from '@/lib/api/types';
 
+const MAJORS_QUERY_ALLOWLIST = [
+  'academicPeriod',
+  'school',
+  'studentType',
+] as const;
+
+export interface MajorsFilterParams {
+  academicPeriod?: string;
+  school?: string;
+  studentType?: string;
+}
+
 interface GetMajorsAnalyticsOptions {
+  filters?: MajorsFilterParams;
   signal?: AbortSignal;
 }
 
@@ -34,16 +48,35 @@ export async function getMajorsAnalytics(
   options: GetMajorsAnalyticsOptions = {}
 ): Promise<MajorsAnalyticsResponse> {
   const encodedDatasetId = encodePathSegment(datasetId);
+  const analyticsEndpoint = toApiPath(
+    `/datasets/${encodedDatasetId}/analytics-records`
+  );
+  const cohortEndpoint = toApiPath(
+    `/datasets/${encodedDatasetId}/major-cohort-records`
+  );
+
+  const query = buildGuardedQuery({
+    endpoint: analyticsEndpoint,
+    params: {
+      academicPeriod: options.filters?.academicPeriod,
+      school: options.filters?.school,
+      studentType: options.filters?.studentType,
+    },
+    allowedKeys: MAJORS_QUERY_ALLOWLIST,
+  });
+
   const [analyticsRecordsResponse, majorCohortResponse] = await Promise.all([
     apiClient.get<AnalyticsRecordsResponse>(
-      toApiPath(`/datasets/${encodedDatasetId}/analytics-records`),
+      analyticsEndpoint,
       withDatasetCache(datasetId, {
+        query,
         signal: options.signal,
       })
     ),
     apiClient.get<MajorCohortRecordsResponse>(
-      toApiPath(`/datasets/${encodedDatasetId}/major-cohort-records`),
+      cohortEndpoint,
       withDatasetCache(datasetId, {
+        query,
         signal: options.signal,
       })
     ),

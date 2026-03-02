@@ -51,6 +51,13 @@ export function buildDashboardModel(
     majorsData: null,
     majorsLoading: false,
     majorsError: null,
+    majorsFilters: {},
+    setMajorsFilters: noop,
+    majorsFilterOptions: {
+      academicPeriodOptions: [],
+      schoolOptions: [],
+      studentTypeOptions: [],
+    },
     retryMajors: noop,
     migrationData: null,
     migrationLoading: false,

@@ -11,6 +11,7 @@ import type {
   UIError,
 } from '@/lib/api/types';
 import { DateFilterButton } from '@/features/filters/components/DateFilterButton';
+import type { MajorsFilterValues } from '@/features/filters/components/MajorsFilterPanel';
 import { PanelEmptyState } from './panels/PanelStates';
 import { ForecastsPanel } from './panels/ForecastsPanel';
 import { MajorsPanel } from './panels/MajorsPanel';
@@ -55,6 +56,13 @@ interface DashboardTabsModel {
   majorsData: MajorsAnalyticsResponse | null;
   majorsLoading: boolean;
   majorsError: UIError | null;
+  majorsFilters: MajorsFilterValues;
+  setMajorsFilters: (filters: MajorsFilterValues) => void;
+  majorsFilterOptions: {
+    academicPeriodOptions: string[];
+    schoolOptions: string[];
+    studentTypeOptions: string[];
+  };
   retryMajors: () => void;
   migrationData: MigrationAnalyticsResponse | null;
   migrationLoading: boolean;
@@ -218,6 +226,13 @@ export function DashboardTabs(props: DashboardTabsProps) {
           loading={model.majorsLoading}
           error={model.majorsError}
           onRetry={model.retryMajors}
+          filters={model.majorsFilters}
+          onFiltersChange={model.setMajorsFilters}
+          academicPeriodOptions={
+            model.majorsFilterOptions.academicPeriodOptions
+          }
+          schoolOptions={model.majorsFilterOptions.schoolOptions}
+          studentTypeOptions={model.majorsFilterOptions.studentTypeOptions}
           readModelState={model.readModelState}
           readModelStatus={model.readModelStatus}
           readModelError={model.readModelError}
