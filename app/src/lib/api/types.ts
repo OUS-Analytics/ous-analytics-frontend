@@ -137,7 +137,7 @@ export interface ForecastPoint extends TrendPoint {
 export interface DatasetTrendPoint {
   period: string;
   year: number;
-  semester: string;
+  semester: number;
   total: number;
 }
 

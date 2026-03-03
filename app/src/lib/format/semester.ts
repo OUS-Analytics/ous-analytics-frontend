@@ -1,6 +1,5 @@
 export const FALL_SEMESTER_LABEL = 'Fall';
 export const SPRING_SEMESTER_LABEL = 'Spring';
-export const UNKNOWN_SEMESTER_LABEL = 'Unknown';
 
 export type SemesterOrder = 1 | 2;
 
@@ -54,22 +53,4 @@ export function toSemesterLabel(order: SemesterOrder) {
 
 export function getSemesterLabelForDate(date: Date) {
   return date.getMonth() >= 7 ? FALL_SEMESTER_LABEL : SPRING_SEMESTER_LABEL;
-}
-
-export function normalizeSemesterLabel(
-  semester: string | number | null | undefined
-): string {
-  const normalizedString = asTrimmedString(
-    typeof semester === 'string' ? semester : null
-  );
-  if (normalizedString) {
-    return normalizedString;
-  }
-
-  if (typeof semester === 'number' && Number.isFinite(semester)) {
-    // Preserve raw numeric labels from backend anomalies to avoid mutating data semantics.
-    return String(semester);
-  }
-
-  return UNKNOWN_SEMESTER_LABEL;
 }

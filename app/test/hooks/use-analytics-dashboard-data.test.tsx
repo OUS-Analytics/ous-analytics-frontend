@@ -426,7 +426,7 @@ describe('useDashboardMetricsModel', () => {
       studentTypeDistribution: [{ type: 'FTIC', count: 400 }],
       schoolDistribution: [{ school: 'School of Business', count: 250 }],
       trend: [
-        { period: 'Fall 2025', year: 2025, semester: 'Fall', total: 950 },
+        { period: 'Fall 2025', year: 2025, semester: 1, total: 950 },
       ],
     });
 
@@ -461,13 +461,13 @@ describe('useDashboardMetricsModel', () => {
     mockGetForecastsAnalytics.mockResolvedValue({
       datasetId: 'dataset-1',
       historical: [
-        { period: 'Fall 2025', year: 2025, semester: 'Fall', total: 950 },
+        { period: 'Fall 2025', year: 2025, semester: 1, total: 950 },
       ],
       forecast: [
         {
           period: 'Spring 2026',
           year: 2026,
-          semester: 'Spring',
+          semester: 2,
           total: 1000,
           isForecasted: true,
         },
@@ -553,6 +553,114 @@ describe('useDashboardMetricsModel', () => {
     ]);
   });
 
+  test('keeps majors and migration filters stable with numeric backend semester values', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'Dataset 1',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 1000,
+        undergrad: 900,
+        ftic: 400,
+        transfer: 200,
+        international: 120,
+      },
+      activeMajors: 12,
+      activeSchools: 6,
+      studentTypeDistribution: [{ type: 'FTIC', count: 400 }],
+      schoolDistribution: [{ school: 'School of Business', count: 250 }],
+      trend: [
+        { period: 'Fall 2025', year: 2025, semester: 1, total: 950 },
+        { period: 'Spring 2026', year: 2026, semester: 2, total: 980 },
+      ],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [
+        {
+          year: 2025,
+          semester: 'Fall',
+          major: 'Biology',
+          school: 'School of Science',
+          studentType: 'FTIC',
+          count: 100,
+        },
+        {
+          year: 2026,
+          semester: 'Spring',
+          major: 'Chemistry',
+          school: 'School of Engineering',
+          studentType: 'Transfer',
+          count: 50,
+        },
+      ],
+      majorDistribution: [
+        { major: 'Biology', count: 100 },
+        { major: 'Chemistry', count: 50 },
+      ],
+      cohortRecords: [],
+    });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: ['Spring 2026'],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [{ period: 'Fall 2025', year: 2025, semester: 1, total: 950 }],
+      forecast: [
+        {
+          period: 'Spring 2026',
+          year: 2026,
+          semester: 2,
+          total: 980,
+          isForecasted: true,
+        },
+      ],
+      fiveYearGrowthPct: 8,
+      insights: {
+        projectedGrowthText: 'Projected growth.',
+        resourcePlanningText: 'Resource planning.',
+        recommendationText: 'Recommendation.',
+      },
+    });
+
+    const { result } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(result.current.majorsFilterOptions.academicPeriodOptions).toEqual([
+        'Spring 2026',
+        'Fall 2025',
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.migrationData?.semesters).toEqual(['Spring 2026']);
+    });
+
+    await act(async () => {
+      result.current.setMigrationSemester('Fall 2025');
+    });
+
+    await waitFor(() => {
+      expect(result.current.migrationSemester).toBeUndefined();
+    });
+
+    await act(async () => {
+      result.current.setMigrationSemester('Spring 2026');
+    });
+
+    await waitFor(() => {
+      expect(result.current.migrationSemester).toBe('Spring 2026');
+    });
+  });
+
   test('maps DATASET_NOT_READY to processing state and refreshes reads when dataset becomes ready', async () => {
     jest.useFakeTimers();
     try {
@@ -607,7 +715,7 @@ describe('useDashboardMetricsModel', () => {
           studentTypeDistribution: [{ type: 'FTIC', count: 400 }],
           schoolDistribution: [{ school: 'School of Business', count: 250 }],
           trend: [
-            { period: 'Fall 2025', year: 2025, semester: 'Fall', total: 950 },
+            { period: 'Fall 2025', year: 2025, semester: 1, total: 950 },
           ],
         });
       mockGetMajorsAnalytics.mockResolvedValue({
@@ -676,7 +784,7 @@ describe('useDashboardMetricsModel', () => {
         studentTypeDistribution: [{ type: 'FTIC', count: 400 }],
         schoolDistribution: [{ school: 'School of Business', count: 250 }],
         trend: [
-          { period: 'Fall 2025', year: 2025, semester: 'Fall', total: 950 },
+          { period: 'Fall 2025', year: 2025, semester: 1, total: 950 },
         ],
       };
       let refreshOverviewAborted = false;

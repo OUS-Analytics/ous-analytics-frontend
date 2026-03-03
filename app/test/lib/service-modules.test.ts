@@ -848,16 +848,16 @@ describe('service modules', () => {
     );
   });
 
-  test('getForecastsAnalytics normalizes semester anomalies', async () => {
+  test('getForecastsAnalytics preserves backend semester values', async () => {
     mockApiClient.get.mockResolvedValueOnce({
       datasetId: 'dataset-1',
       fiveYearGrowthPct: 1.5,
-      historical: [{ period: 'Unknown', year: 2024, semester: 2, total: 10 }],
+      historical: [{ period: 'Fall 2024', year: 2024, semester: 1, total: 10 }],
       forecast: [
         {
-          period: 'Unknown',
+          period: 'Spring 2025',
           year: 2025,
-          semester: null,
+          semester: 2,
           total: 12,
           isForecasted: true,
         },
@@ -870,8 +870,8 @@ describe('service modules', () => {
     });
 
     const response = await getForecastsAnalytics('dataset-1');
-    expect(response.historical[0]?.semester).toBe('2');
-    expect(response.forecast[0]?.semester).toBe('Unknown');
+    expect(response.historical[0]?.semester).toBe(1);
+    expect(response.forecast[0]?.semester).toBe(2);
     expect(mockApiClient.get).toHaveBeenCalledWith(
       '/api/v1/datasets/dataset-1/forecasts',
       {
@@ -898,7 +898,15 @@ describe('service modules', () => {
     mockApiClient.get.mockResolvedValueOnce({
       datasetId: 'dataset-1',
       historical: [],
-      forecast: [{ period: 'x', year: 2024, semester: 'Fall', total: 1 }],
+      forecast: [
+        {
+          period: 'x',
+          year: 2024,
+          semester: 'Fall',
+          total: 1,
+          isForecasted: true,
+        },
+      ],
     });
 
     await expect(getForecastsAnalytics('dataset-1')).rejects.toMatchObject({

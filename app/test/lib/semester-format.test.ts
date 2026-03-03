@@ -1,9 +1,7 @@
 import {
   FALL_SEMESTER_LABEL,
   SPRING_SEMESTER_LABEL,
-  UNKNOWN_SEMESTER_LABEL,
   getSemesterLabelForDate,
-  normalizeSemesterLabel,
   toSemesterLabel,
   toSemesterOrder,
 } from '@/lib/format/semester';
@@ -20,6 +18,7 @@ describe('semester formatting helpers', () => {
 
   test('toSemesterOrder returns null for unsupported values', () => {
     expect(toSemesterOrder('Summer')).toBeNull();
+    expect(toSemesterOrder('   ')).toBeNull();
     expect(toSemesterOrder(3)).toBeNull();
     expect(toSemesterOrder(Number.NaN)).toBeNull();
     expect(toSemesterOrder(undefined)).toBeNull();
@@ -37,20 +36,5 @@ describe('semester formatting helpers', () => {
     expect(getSemesterLabelForDate(new Date('2026-03-01'))).toBe(
       SPRING_SEMESTER_LABEL
     );
-  });
-
-  test('normalizeSemesterLabel preserves valid string values and numeric anomalies', () => {
-    expect(normalizeSemesterLabel('Fall')).toBe('Fall');
-    expect(normalizeSemesterLabel('  Spring  ')).toBe('Spring');
-    expect(normalizeSemesterLabel(2)).toBe('2');
-    expect(normalizeSemesterLabel(0)).toBe('0');
-  });
-
-  test('normalizeSemesterLabel falls back to Unknown for empty and invalid inputs', () => {
-    expect(normalizeSemesterLabel('')).toBe(UNKNOWN_SEMESTER_LABEL);
-    expect(normalizeSemesterLabel('   ')).toBe(UNKNOWN_SEMESTER_LABEL);
-    expect(normalizeSemesterLabel(null)).toBe(UNKNOWN_SEMESTER_LABEL);
-    expect(normalizeSemesterLabel(undefined)).toBe(UNKNOWN_SEMESTER_LABEL);
-    expect(normalizeSemesterLabel(Number.NaN)).toBe(UNKNOWN_SEMESTER_LABEL);
   });
 });

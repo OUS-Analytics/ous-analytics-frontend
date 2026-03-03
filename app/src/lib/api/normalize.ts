@@ -7,15 +7,9 @@ import type {
   ForecastLifecycleError,
   ForecastLifecycleState,
 } from './types';
-import { normalizeSemesterLabel } from '@/lib/format/semester';
+export type RawDatasetTrendPoint = DatasetTrendPoint;
 
-export type RawDatasetTrendPoint = Omit<DatasetTrendPoint, 'semester'> & {
-  semester?: string | number | null;
-};
-
-export type RawDatasetForecastPoint = Omit<DatasetForecastPoint, 'semester'> & {
-  semester?: string | number | null;
-};
+export type RawDatasetForecastPoint = DatasetForecastPoint;
 
 export type RawDatasetOverviewResponse = Omit<
   DatasetOverviewResponse,
@@ -54,11 +48,9 @@ function isRawDatasetTrendPoint(value: unknown): value is RawDatasetTrendPoint {
   return (
     typeof value.period === 'string' &&
     isFiniteNumber(value.year) &&
+    isFiniteNumber(value.semester) &&
     isFiniteNumber(value.total) &&
-    (value.semester === undefined ||
-      value.semester === null ||
-      typeof value.semester === 'string' ||
-      isFiniteNumber(value.semester))
+    Number.isInteger(value.semester)
   );
 }
 
@@ -103,19 +95,13 @@ export function isRawDatasetForecastResponse(
 export function normalizeDatasetTrendPoint(
   point: RawDatasetTrendPoint
 ): DatasetTrendPoint {
-  return {
-    ...point,
-    semester: normalizeSemesterLabel(point.semester),
-  };
+  return point;
 }
 
 export function normalizeDatasetForecastPoint(
   point: RawDatasetForecastPoint
 ): DatasetForecastPoint {
-  return {
-    ...point,
-    semester: normalizeSemesterLabel(point.semester),
-  };
+  return point;
 }
 
 export function normalizeDatasetOverviewResponse(
