@@ -1129,7 +1129,7 @@ export function useDashboardMetricsModel() {
   const forecastsDatasetId =
     analyticsDatasetId ??
     (requestedDateUnavailable !== null && dateParam !== null
-      ? activeDatasetId ?? undefined
+      ? (activeDatasetId ?? undefined)
       : undefined);
   const selectedSnapshotId = selectedSnapshot?.snapshotId ?? null;
   // MVP1 no-auth decision: rebuild controls are gated to the non-public admin
@@ -1846,7 +1846,12 @@ export function useDashboardMetricsModel() {
   );
   const retryForecasts = useCallback(
     () =>
-      loadForecasts(forecastsDatasetId, analyticsSnapshotId, forecastRange, dateParam),
+      loadForecasts(
+        forecastsDatasetId,
+        analyticsSnapshotId,
+        forecastRange,
+        dateParam
+      ),
     [
       forecastsDatasetId,
       analyticsSnapshotId,
