@@ -31,6 +31,8 @@ export function DateFilterButton({
     [availableDates]
   );
   const restrictToAvailableDates = availableDateKeys.size > 0;
+  const startMonth = new Date(2005, 0);
+  const endMonth = new Date(2035, 11);
   const buttonDisabled = disabled;
   const dateLabel = date
     ? date.toLocaleDateString('en-US', {
@@ -56,6 +58,9 @@ export function DateFilterButton({
       <PopoverContent className="w-auto p-0" align="end">
         <Calendar
           mode="single"
+          captionLayout="dropdown"
+          startMonth={startMonth}
+          endMonth={endMonth}
           selected={date ?? undefined}
           disabled={
             restrictToAvailableDates
@@ -65,7 +70,7 @@ export function DateFilterButton({
           onSelect={(d) => {
             if (d) onDateChange(d);
           }}
-          initialFocus
+          autoFocus
         />
       </PopoverContent>
     </Popover>
