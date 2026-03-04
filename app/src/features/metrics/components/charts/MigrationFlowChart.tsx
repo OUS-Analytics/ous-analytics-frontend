@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
+import { ArrowRight, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import {
   getMigrationPeriodLabel,
@@ -13,19 +14,21 @@ import { MigrationFlowEmptyState } from './MigrationFlowEmptyState';
 interface MigrationFlowChartProps {
   data: MigrationRecord[];
   selectedSemester?: string;
+  periodLabel?: string;
 }
 
 function MigrationFlowChartComponent({
   data,
   selectedSemester,
+  periodLabel: periodLabelOverride,
 }: MigrationFlowChartProps) {
   const sortedMigrations = useMemo(
     () => getTopMigrationFlows(data, selectedSemester, 12),
     [data, selectedSemester]
   );
   const periodLabel = useMemo(
-    () => getMigrationPeriodLabel(selectedSemester),
-    [selectedSemester]
+    () => periodLabelOverride ?? getMigrationPeriodLabel(selectedSemester),
+    [periodLabelOverride, selectedSemester]
   );
 
   if (sortedMigrations.length === 0) {
@@ -44,17 +47,26 @@ function MigrationFlowChartComponent({
       </CardHeader>
       <CardContent>
         <MigrationFlowBars flows={sortedMigrations} />
-        <div className="mt-6 rounded-lg bg-secondary/50 p-3">
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Key Insight:</span>{' '}
-            The largest migration flow is from{' '}
-            <span className="text-chart-1">
+        <div className="mt-6 rounded-xl border border-primary/30 bg-primary/10 p-4">
+          <div className="flex items-center gap-2 text-primary">
+            <Lightbulb className="h-4 w-4" />
+            <p className="text-xs font-semibold uppercase tracking-wide">
+              Key Insight
+            </p>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-foreground">
+            <span className="font-semibold">
               {sortedMigrations[0]?.fromMajor}
+            </span>
+            <ArrowRight className="mx-2 inline h-4 w-4 align-text-bottom text-primary" />
+            <span className="font-semibold">
+              {sortedMigrations[0]?.toMajor}
             </span>{' '}
-            to{' '}
-            <span className="text-chart-2">{sortedMigrations[0]?.toMajor}</span>{' '}
-            with {sortedMigrations[0]?.totalCount.toLocaleString()} total
-            students over the selected semester.
+            has the largest movement with{' '}
+            <span className="font-semibold text-primary">
+              {sortedMigrations[0]?.totalCount.toLocaleString()} students
+            </span>{' '}
+            in this range.
           </p>
         </div>
       </CardContent>

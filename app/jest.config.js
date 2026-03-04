@@ -22,7 +22,11 @@ const customConfig = {
     '^@radix-ui/react-menubar$': '<rootDir>/test/mocks/radix-menubar.tsx',
     '^@radix-ui/react-navigation-menu$': '<rootDir>/test/mocks/radix-navigation-menu.tsx',
   },
-  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/tests/e2e/',
+  ],
   collectCoverageFrom: [
     '<rootDir>/src/**/*.{ts,tsx}',
     '!**/*.d.ts',

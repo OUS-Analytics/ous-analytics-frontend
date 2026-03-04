@@ -76,6 +76,10 @@ interface DashboardTabsModel {
   migrationError: UIError | null;
   migrationSemester?: string;
   setMigrationSemester: (value: string | undefined) => void;
+  migrationStartSemester?: string;
+  migrationEndSemester?: string;
+  setMigrationStartSemester?: (value: string | undefined) => void;
+  setMigrationEndSemester?: (value: string | undefined) => void;
   retryMigration: () => void;
   forecastsData: ForecastsAnalyticsResponse | null;
   forecastsLoading: boolean;
@@ -316,8 +320,10 @@ export function DashboardTabs(props: DashboardTabsProps) {
           data={model.migrationData}
           loading={model.migrationLoading}
           error={model.migrationError}
-          migrationSemester={model.migrationSemester}
-          onSemesterChange={model.setMigrationSemester}
+          migrationStartSemester={model.migrationStartSemester}
+          migrationEndSemester={model.migrationEndSemester}
+          onStartSemesterChange={model.setMigrationStartSemester}
+          onEndSemesterChange={model.setMigrationEndSemester}
           onRetry={model.retryMigration}
           readModelState={model.readModelState}
           readModelStatus={model.readModelStatus}

@@ -11,10 +11,16 @@ import type {
   MigrationRecordsResponse,
 } from '@/lib/api/types';
 
-const MIGRATION_RECORDS_QUERY_ALLOWLIST = ['semester'] as const;
+const MIGRATION_RECORDS_QUERY_ALLOWLIST = [
+  'startDate',
+  'endDate',
+  'academicPeriod',
+] as const;
 
 interface GetMigrationAnalyticsOptions {
   semester?: string;
+  startDate?: string;
+  endDate?: string;
   signal?: AbortSignal;
 }
 
@@ -30,29 +36,48 @@ export async function getMigrationAnalytics(
     `/datasets/${encodedDatasetId}/migration-records`
   );
 
-  const [optionsResponse, recordsResponse] = await Promise.all([
-    apiClient.get<MigrationOptionsResponse>(
-      optionsEndpoint,
-      withDatasetCache(datasetId, {
-        signal: options.signal,
-      })
-    ),
-    apiClient.get<MigrationRecordsResponse>(
-      recordsEndpoint,
-      withDatasetCache(datasetId, {
-        query: buildGuardedQuery({
-          endpoint: recordsEndpoint,
-          params: { semester: options.semester },
-          allowedKeys: MIGRATION_RECORDS_QUERY_ALLOWLIST,
-        }),
-        signal: options.signal,
-      })
-    ),
-  ]);
+  const optionsResponse = await apiClient.get<MigrationOptionsResponse>(
+    optionsEndpoint,
+    withDatasetCache(datasetId, {
+      signal: options.signal,
+    })
+  );
+
+  const semesters =
+    optionsResponse.semesters ?? optionsResponse.academicPeriods ?? [];
+  const startDate = options.startDate ?? optionsResponse.minEffectiveDate;
+  const endDate = options.endDate ?? optionsResponse.maxEffectiveDate;
+
+  if (!startDate || !endDate) {
+    return {
+      datasetId,
+      semesters,
+      records: [],
+    };
+  }
+
+  const [queryStartDate, queryEndDate] =
+    startDate <= endDate ? [startDate, endDate] : [endDate, startDate];
+
+  const recordsResponse = await apiClient.get<MigrationRecordsResponse>(
+    recordsEndpoint,
+    withDatasetCache(datasetId, {
+      query: buildGuardedQuery({
+        endpoint: recordsEndpoint,
+        params: {
+          startDate: queryStartDate,
+          endDate: queryEndDate,
+          academicPeriod: options.semester,
+        },
+        allowedKeys: MIGRATION_RECORDS_QUERY_ALLOWLIST,
+      }),
+      signal: options.signal,
+    })
+  );
 
   return {
     datasetId,
-    semesters: optionsResponse.semesters,
+    semesters,
     records: recordsResponse.records,
   };
 }

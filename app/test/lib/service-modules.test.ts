@@ -798,6 +798,9 @@ describe('service modules', () => {
     mockApiClient.get
       .mockResolvedValueOnce({
         datasetId: 'dataset-1',
+        minEffectiveDate: '2026-01-01',
+        maxEffectiveDate: '2026-05-01',
+        academicPeriods: ['Fall 2024'],
         semesters: ['Fall 2024'],
       })
       .mockResolvedValueOnce({
@@ -817,7 +820,11 @@ describe('service modules', () => {
       2,
       '/api/v1/datasets/dataset-1/migration-records',
       {
-        query: { semester: 'Fall 2024' },
+        query: {
+          startDate: '2026-01-01',
+          endDate: '2026-05-01',
+          academicPeriod: 'Fall 2024',
+        },
         signal: undefined,
         datasetCache: { datasetId: 'dataset-1' },
       }
@@ -828,6 +835,9 @@ describe('service modules', () => {
     mockApiClient.get
       .mockResolvedValueOnce({
         datasetId: 'dataset-1',
+        minEffectiveDate: '2026-01-01',
+        maxEffectiveDate: '2026-05-01',
+        academicPeriods: [],
         semesters: [],
       })
       .mockResolvedValueOnce({
@@ -841,11 +851,104 @@ describe('service modules', () => {
       2,
       '/api/v1/datasets/dataset-1/migration-records',
       {
-        query: {},
+        query: {
+          startDate: '2026-01-01',
+          endDate: '2026-05-01',
+        },
         signal: undefined,
         datasetCache: { datasetId: 'dataset-1' },
       }
     );
+  });
+
+  test('getMigrationAnalytics supports explicit semester range overrides', async () => {
+    mockApiClient.get
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        minEffectiveDate: '2026-01-01',
+        maxEffectiveDate: '2026-05-01',
+        academicPeriods: ['Fall 2024', 'Spring 2025'],
+        semesters: ['Fall 2024', 'Spring 2025'],
+      })
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        records: [],
+      });
+
+    await getMigrationAnalytics('dataset-1', {
+      startDate: '2026-04-01',
+      endDate: '2026-02-01',
+    });
+
+    expect(mockApiClient.get).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/datasets/dataset-1/migration-records',
+      {
+        query: {
+          startDate: '2026-02-01',
+          endDate: '2026-04-01',
+        },
+        signal: undefined,
+        datasetCache: { datasetId: 'dataset-1' },
+      }
+    );
+  });
+
+  test('getMigrationAnalytics falls back to academicPeriods when semesters are omitted', async () => {
+    mockApiClient.get
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        minEffectiveDate: '2026-01-01',
+        maxEffectiveDate: '2026-05-01',
+        academicPeriods: ['Fall 2024', 'Spring 2025'],
+      })
+      .mockResolvedValueOnce({
+        datasetId: 'dataset-1',
+        records: [],
+      });
+
+    const response = await getMigrationAnalytics('dataset-1');
+
+    expect(response).toEqual({
+      datasetId: 'dataset-1',
+      semesters: ['Fall 2024', 'Spring 2025'],
+      records: [],
+    });
+  });
+
+  test('getMigrationAnalytics defaults to an empty semester list when options omit both fields', async () => {
+    mockApiClient.get.mockResolvedValueOnce({
+      datasetId: 'dataset-1',
+      minEffectiveDate: null,
+      maxEffectiveDate: null,
+    });
+
+    const response = await getMigrationAnalytics('dataset-1');
+
+    expect(response).toEqual({
+      datasetId: 'dataset-1',
+      semesters: [],
+      records: [],
+    });
+  });
+
+  test('getMigrationAnalytics skips migration records when date bounds are unavailable', async () => {
+    mockApiClient.get.mockResolvedValueOnce({
+      datasetId: 'dataset-1',
+      minEffectiveDate: null,
+      maxEffectiveDate: null,
+      academicPeriods: ['Fall 2024'],
+      semesters: ['Fall 2024'],
+    });
+
+    const response = await getMigrationAnalytics('dataset-1');
+
+    expect(response).toEqual({
+      datasetId: 'dataset-1',
+      semesters: ['Fall 2024'],
+      records: [],
+    });
+    expect(mockApiClient.get).toHaveBeenCalledTimes(1);
   });
 
   test('getForecastsAnalytics preserves backend semester values', async () => {

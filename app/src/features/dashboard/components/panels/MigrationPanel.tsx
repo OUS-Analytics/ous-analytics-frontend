@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
+import { SemesterRangeFilterSelect } from '@/features/filters/components/SemesterRangeFilterSelect';
 import { MigrationFlowChart } from '@/features/metrics/components/charts/MigrationFlowChart';
 import { MigrationTopFlowsTable } from '@/features/metrics/components/MigrationTopFlowsTable';
-import { SemesterFilterSelect } from '@/features/filters/components/SemesterFilterSelect';
 import { formatUIErrorMessage } from '@/lib/api/errors';
 import type { MigrationAnalyticsResponse, UIError } from '@/lib/api/types';
 import { TabsContent } from '@/shared/ui/tabs';
@@ -17,8 +17,10 @@ interface MigrationPanelProps {
   data: MigrationAnalyticsResponse | null;
   loading: boolean;
   error: UIError | null;
-  migrationSemester?: string;
-  onSemesterChange: (value: string | undefined) => void;
+  migrationStartSemester?: string;
+  migrationEndSemester?: string;
+  onStartSemesterChange?: (value: string | undefined) => void;
+  onEndSemesterChange?: (value: string | undefined) => void;
   onRetry: () => void;
   readModelState: 'ready' | 'processing' | 'failed';
   readModelStatus: string | null;
@@ -31,8 +33,10 @@ function MigrationPanelComponent({
   data,
   loading,
   error,
-  migrationSemester,
-  onSemesterChange,
+  migrationStartSemester,
+  migrationEndSemester,
+  onStartSemesterChange,
+  onEndSemesterChange,
   onRetry,
   readModelState,
   readModelStatus,
@@ -43,6 +47,22 @@ function MigrationPanelComponent({
   const semesterOptions = useMemo(() => data?.semesters ?? [], [data]);
   const migrationData = useMemo(() => data?.records ?? [], [data]);
   const hasMigrationRecords = migrationData.length > 0;
+  const handleStartSemesterChange = onStartSemesterChange ?? (() => {});
+  const handleEndSemesterChange = onEndSemesterChange ?? (() => {});
+  const periodLabel = useMemo(() => {
+    if (migrationStartSemester && migrationEndSemester) {
+      return migrationStartSemester === migrationEndSemester
+        ? migrationStartSemester
+        : `${migrationStartSemester} to ${migrationEndSemester}`;
+    }
+    if (migrationStartSemester) {
+      return `${migrationStartSemester} onward`;
+    }
+    if (migrationEndSemester) {
+      return `Up to ${migrationEndSemester}`;
+    }
+    return 'All Semesters';
+  }, [migrationEndSemester, migrationStartSemester]);
 
   return (
     <TabsContent value="migration" className="space-y-6">
@@ -52,12 +72,14 @@ function MigrationPanelComponent({
             Major Migration Analysis
           </h2>
           <p className="text-sm text-muted-foreground">
-            Track student movement between majors by semester
+            Track student movement between majors over a selected semester range
           </p>
         </div>
-        <SemesterFilterSelect
-          value={migrationSemester}
-          onValueChange={onSemesterChange}
+        <SemesterRangeFilterSelect
+          startValue={migrationStartSemester}
+          endValue={migrationEndSemester}
+          onStartValueChange={handleStartSemesterChange}
+          onEndValueChange={handleEndSemesterChange}
           options={semesterOptions}
         />
       </div>
@@ -117,17 +139,19 @@ function MigrationPanelComponent({
         !error &&
         data &&
         hasMigrationRecords && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          <div className="grid gap-6 lg:grid-cols-12">
+            <div className="lg:col-span-7">
               <MigrationFlowChart
                 data={migrationData}
-                selectedSemester={migrationSemester}
+                periodLabel={periodLabel}
               />
             </div>
-            <MigrationTopFlowsTable
-              data={migrationData}
-              selectedSemester={migrationSemester}
-            />
+            <div className="lg:col-span-5">
+              <MigrationTopFlowsTable
+                data={migrationData}
+                periodLabel={periodLabel}
+              />
+            </div>
           </div>
         )}
     </TabsContent>

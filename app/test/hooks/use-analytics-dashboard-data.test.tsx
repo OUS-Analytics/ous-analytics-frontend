@@ -553,6 +553,91 @@ describe('useDashboardMetricsModel', () => {
     ]);
   });
 
+  test('falls back to default term sort order for unknown semester labels', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'Dataset 1',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockListSnapshots.mockResolvedValue({
+      items: [makeSnapshot('2026-03-01', 'dataset-1')],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 0,
+        undergrad: 0,
+        ftic: 0,
+        transfer: 0,
+        international: 0,
+      },
+      activeMajors: 0,
+      activeSchools: 0,
+      studentTypeDistribution: [],
+      schoolDistribution: [],
+      trend: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [
+        {
+          year: 2026,
+          semester: 'Winter',
+          major: 'History',
+          school: 'School of Humanities',
+          studentType: 'FTIC',
+          count: 10,
+        },
+        {
+          year: 2026,
+          semester: 'Fall',
+          major: 'Biology',
+          school: 'School of Science',
+          studentType: 'Transfer',
+          count: 20,
+        },
+      ],
+      majorDistribution: [],
+      cohortRecords: [],
+    });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: [],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+      fiveYearGrowthPct: 0,
+      insights: {
+        projectedGrowthText: '',
+        resourcePlanningText: '',
+        recommendationText: '',
+      },
+    });
+
+    const { result, rerender } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(mockRouter.replace).toHaveBeenCalledWith('/?date=2026-03-01');
+    });
+    rerender();
+
+    await waitFor(() => {
+      expect(result.current.majorsFilterOptions.academicPeriodOptions).toEqual([
+        'Fall 2026',
+        'Winter 2026',
+      ]);
+    });
+  });
+
   test('keeps majors and migration filters stable with numeric backend semester values', async () => {
     mockGetActiveDataset.mockResolvedValue({
       datasetId: 'dataset-1',
@@ -658,6 +743,492 @@ describe('useDashboardMetricsModel', () => {
 
     await waitFor(() => {
       expect(result.current.migrationSemester).toBe('Spring 2026');
+    });
+  });
+
+  test('supports migration semester range filters by resolving start and end dates', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'dataset.csv',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockListSnapshots.mockResolvedValue({
+      items: [
+        makeSnapshot('2025-10-01', 'dataset-1', {
+          academicPeriod: 'Fall 2025',
+        }),
+        makeSnapshot('2026-03-01', 'dataset-1', {
+          academicPeriod: 'Spring 2026',
+        }),
+      ],
+      page: 1,
+      pageSize: 20,
+      total: 2,
+    });
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 1000,
+        undergrad: 900,
+        ftic: 400,
+        transfer: 200,
+        international: 120,
+      },
+      activeMajors: 12,
+      activeSchools: 6,
+      studentTypeDistribution: [{ type: 'FTIC', count: 400 }],
+      schoolDistribution: [{ school: 'School of Business', count: 250 }],
+      trend: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [],
+      majorDistribution: [],
+      cohortRecords: [],
+    });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: ['Fall 2025', 'Spring 2026'],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+      fiveYearGrowthPct: 0,
+      insights: {
+        projectedGrowthText: '',
+        resourcePlanningText: '',
+        recommendationText: '',
+      },
+    });
+
+    const { result, rerender } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(mockRouter.replace).toHaveBeenCalledWith('/?date=2026-03-01');
+    });
+
+    rerender();
+
+    await waitFor(() => {
+      expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-1', {
+        signal: expect.any(Object),
+      });
+    });
+
+    mockGetMigrationAnalytics.mockClear();
+
+    await act(async () => {
+      result.current.setMigrationStartSemester('Fall 2025');
+      result.current.setMigrationEndSemester('Spring 2026');
+    });
+
+    await waitFor(() => {
+      expect(mockGetMigrationAnalytics).toHaveBeenLastCalledWith('dataset-1', {
+        startDate: '2025-10-01',
+        endDate: '2026-03-01',
+        signal: expect.any(Object),
+      });
+    });
+    expect(result.current.migrationStartSemester).toBe('Fall 2025');
+    expect(result.current.migrationEndSemester).toBe('Spring 2026');
+
+    mockGetMigrationAnalytics.mockClear();
+
+    await act(async () => {
+      result.current.setMigrationStartSemester(undefined);
+      result.current.setMigrationEndSemester('Spring 2026');
+    });
+
+    await waitFor(() => {
+      expect(mockGetMigrationAnalytics).toHaveBeenLastCalledWith('dataset-1', {
+        startDate: '2025-10-01',
+        endDate: '2026-03-01',
+        signal: expect.any(Object),
+      });
+    });
+    expect(result.current.migrationStartSemester).toBeUndefined();
+    expect(result.current.migrationEndSemester).toBe('Spring 2026');
+  });
+
+  test('normalizes migration range ordering when selected start and end semesters are inverted', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'dataset.csv',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockListSnapshots.mockResolvedValue({
+      items: [
+        makeSnapshot('2025-10-01', 'dataset-1', {
+          academicPeriod: 'Fall 2025',
+        }),
+        makeSnapshot('2025-02-01', 'dataset-1', {
+          academicPeriod: 'Spring 2025',
+        }),
+      ],
+      page: 1,
+      pageSize: 20,
+      total: 2,
+    });
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 0,
+        undergrad: 0,
+        ftic: 0,
+        transfer: 0,
+        international: 0,
+      },
+      activeMajors: 0,
+      activeSchools: 0,
+      studentTypeDistribution: [],
+      schoolDistribution: [],
+      trend: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [],
+      majorDistribution: [],
+      cohortRecords: [],
+    });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: ['Spring 2025', 'Fall 2025'],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+      fiveYearGrowthPct: 0,
+      insights: {
+        projectedGrowthText: '',
+        resourcePlanningText: '',
+        recommendationText: '',
+      },
+    });
+
+    const { result, rerender } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(mockRouter.replace).toHaveBeenCalledWith('/?date=2025-10-01');
+    });
+    rerender();
+
+    await waitFor(() => {
+      expect(result.current.migrationData?.semesters).toEqual([
+        'Spring 2025',
+        'Fall 2025',
+      ]);
+    });
+
+    await act(async () => {
+      result.current.setMigrationStartSemester('Fall 2025');
+      result.current.setMigrationEndSemester('Spring 2025');
+    });
+
+    await waitFor(() => {
+      expect(result.current.migrationStartSemester).toBe('Spring 2025');
+      expect(result.current.migrationEndSemester).toBe('Spring 2025');
+    });
+
+    await act(async () => {
+      result.current.setMigrationEndSemester('Spring 2025');
+      result.current.setMigrationStartSemester('Fall 2025');
+    });
+
+    await waitFor(() => {
+      expect(result.current.migrationStartSemester).toBe('Fall 2025');
+      expect(result.current.migrationEndSemester).toBe('Fall 2025');
+    });
+  });
+
+  test('normalizes migration date windows when inverted ranges are chosen before snapshots load', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'dataset.csv',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+
+    let resolveSnapshots: (value: SnapshotListResponse) => void = () => {};
+    mockListSnapshots.mockImplementation(
+      () =>
+        new Promise<SnapshotListResponse>((resolve) => {
+          resolveSnapshots = resolve;
+        })
+    );
+
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 0,
+        undergrad: 0,
+        ftic: 0,
+        transfer: 0,
+        international: 0,
+      },
+      activeMajors: 0,
+      activeSchools: 0,
+      studentTypeDistribution: [],
+      schoolDistribution: [],
+      trend: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [],
+      majorDistribution: [],
+      cohortRecords: [],
+    });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: ['Spring 2025', 'Fall 2025'],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+      fiveYearGrowthPct: 0,
+      insights: {
+        projectedGrowthText: '',
+        resourcePlanningText: '',
+        recommendationText: '',
+      },
+    });
+
+    const { result } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(result.current.snapshotDatesLoading).toBe(true);
+    });
+
+    await act(async () => {
+      result.current.setMigrationStartSemester('Fall 2025');
+      result.current.setMigrationEndSemester('Spring 2025');
+    });
+
+    await act(async () => {
+      resolveSnapshots({
+        items: [
+          makeSnapshot('2025-10-01', 'dataset-1', {
+            academicPeriod: 'Fall 2025',
+          }),
+          makeSnapshot('2025-02-01', 'dataset-1', {
+            academicPeriod: 'Spring 2025',
+          }),
+        ],
+        page: 1,
+        pageSize: 20,
+        total: 2,
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-1', {
+        startDate: '2025-02-01',
+        endDate: '2025-10-01',
+        signal: expect.any(Object),
+      });
+    });
+  });
+
+  test('keeps migration window undefined when range selections have no snapshot date bounds', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'dataset.csv',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockListSnapshots.mockRejectedValue(
+      new ServiceError(
+        'NETWORK_ERROR',
+        'Unable to load available snapshot dates.',
+        true
+      )
+    );
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 0,
+        undergrad: 0,
+        ftic: 0,
+        transfer: 0,
+        international: 0,
+      },
+      activeMajors: 0,
+      activeSchools: 0,
+      studentTypeDistribution: [],
+      schoolDistribution: [],
+      trend: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [],
+      majorDistribution: [],
+      cohortRecords: [],
+    });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: ['Fall 2025'],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+      fiveYearGrowthPct: 0,
+      insights: {
+        projectedGrowthText: '',
+        resourcePlanningText: '',
+        recommendationText: '',
+      },
+    });
+
+    const { result } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(result.current.snapshotDatesError).toMatchObject({
+        code: 'NETWORK_ERROR',
+      });
+    });
+
+    await act(async () => {
+      result.current.setMigrationStartSemester('Fall 2025');
+    });
+
+    await waitFor(() => {
+      expect(result.current.migrationStartSemester).toBe('Fall 2025');
+      expect(result.current.migrationEndSemester).toBeUndefined();
+    });
+  });
+
+  test('ignores incomplete snapshots in range derivation and sorts same-year terms by semester order', async () => {
+    mockGetActiveDataset.mockResolvedValue({
+      datasetId: 'dataset-1',
+      name: 'dataset.csv',
+      status: 'ready',
+      isActive: true,
+      createdAt: '2026-02-11T00:00:00Z',
+      sourceSubmissionId: 'sub-1',
+    });
+    mockListSnapshots.mockResolvedValue({
+      items: [
+        makeSnapshot('2026-03-01', 'dataset-1', {
+          academicPeriod: 'Spring 2026',
+        }),
+        makeSnapshot('2026-01-01', 'dataset-1', {
+          academicPeriod: null,
+        }),
+        makeSnapshot('', 'dataset-1', {
+          academicPeriod: 'Fall 2025',
+        }),
+      ],
+      page: 1,
+      pageSize: 20,
+      total: 3,
+    });
+    mockGetDatasetOverview.mockResolvedValue({
+      datasetId: 'dataset-1',
+      snapshotTotals: {
+        total: 0,
+        undergrad: 0,
+        ftic: 0,
+        transfer: 0,
+        international: 0,
+      },
+      activeMajors: 0,
+      activeSchools: 0,
+      studentTypeDistribution: [],
+      schoolDistribution: [],
+      trend: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      analyticsRecords: [
+        {
+          year: 2026,
+          semester: 'Spring',
+          major: 'Biology',
+          school: 'Science',
+          studentType: 'FTIC',
+          count: 3,
+        },
+        {
+          year: 2026,
+          semester: 'Fall',
+          major: 'Chemistry',
+          school: 'Science',
+          studentType: 'Transfer',
+          count: 2,
+        },
+      ],
+      majorDistribution: [],
+      cohortRecords: [],
+    });
+    mockGetMajorsAnalytics.mockResolvedValue({
+        datasetId: 'dataset-1',
+        majorDistribution: [],
+        cohortRecords: [],
+        analyticsRecords: [
+          {
+            year: 2026,
+            semester: 'Spring',
+            major: 'Biology',
+            school: 'Science',
+            studentType: 'FTIC',
+            count: 3,
+          },
+          {
+            year: 2026,
+            semester: 'Fall',
+            major: 'Chemistry',
+            school: 'Science',
+            studentType: 'Transfer',
+            count: 2,
+          },
+        ],
+      });
+    mockGetMigrationAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      semesters: ['Spring 2026'],
+      records: [],
+    });
+    mockGetForecastsAnalytics.mockResolvedValue({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+      fiveYearGrowthPct: 0,
+      insights: {
+        projectedGrowthText: '',
+        resourcePlanningText: '',
+        recommendationText: '',
+      },
+    });
+
+    const { result, rerender } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(mockRouter.replace).toHaveBeenCalledWith('/?date=2026-03-01');
+    });
+    rerender();
+
+    await waitFor(() => {
+      expect(result.current.majorsFilterOptions.academicPeriodOptions).toEqual([
+        'Fall 2026',
+        'Spring 2026',
+      ]);
     });
   });
 
@@ -3045,7 +3616,6 @@ describe('useDashboardMetricsModel', () => {
         signal: expect.any(Object),
       });
       expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-2', {
-        semester: undefined,
         signal: expect.any(Object),
       });
       expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-2', {
@@ -3125,6 +3695,44 @@ describe('useDashboardMetricsModel', () => {
         latestSelectableSnapshot: invalidEffectiveDateSnapshot,
         selectedSnapshot:
           requestedDateParam === null ? null : invalidEffectiveDateSnapshot,
+        availableDateValues: ['2026-02-11'],
+      })
+    );
+
+    const { result } = renderHook(() => useDashboardMetricsModel());
+
+    await waitFor(() => {
+      expect(result.current.overviewData?.datasetId).toBe('dataset-1');
+    });
+
+    expect(mockGetSnapshotCoverage).not.toHaveBeenCalled();
+    expect(result.current.snapshotCoverage).toBeNull();
+    expect(result.current.snapshotCoverageError).toBeNull();
+  });
+
+  test('skips coverage fetch when selected snapshot misses effective date and URL date is explicit', async () => {
+    setMockSearchParams('?date=2026-02-11');
+    mockGetActiveDataset.mockResolvedValue(
+      makeActiveDataset('dataset-1', 'ready')
+    );
+    mockListSnapshots.mockResolvedValue({
+      items: [makeSnapshot('2026-02-11', 'dataset-1')],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    mockSuccessfulDashboardReads('dataset-1');
+
+    const malformedSnapshot = {
+      ...makeSnapshot('2026-02-11', 'dataset-1'),
+      snapshotId: 'snap-missing-effective-date',
+      effectiveDate: undefined,
+    } as unknown as SnapshotListResponse['items'][number];
+    mockResolveSnapshotDateSelection.mockImplementation(
+      (_snapshots, requestedDateParam): SnapshotDateSelection => ({
+        sortedSnapshots: [malformedSnapshot],
+        latestSelectableSnapshot: malformedSnapshot,
+        selectedSnapshot: requestedDateParam === null ? null : malformedSnapshot,
         availableDateValues: ['2026-02-11'],
       })
     );
@@ -3474,7 +4082,6 @@ describe('useDashboardMetricsModel', () => {
     expect(hasDataset2FilteredMajorsRequest).toBe(true);
     expect(hasDataset2UnfilteredMajorsRequest).toBe(true);
     expect(mockGetMigrationAnalytics).toHaveBeenLastCalledWith('dataset-2', {
-      semester: undefined,
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenLastCalledWith('dataset-2', {
@@ -3806,7 +4413,6 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-1', {
-      semester: undefined,
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-1', {
@@ -3908,7 +4514,6 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-2', {
-      semester: undefined,
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-2', {
@@ -4006,7 +4611,6 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetMigrationAnalytics).toHaveBeenCalledWith('dataset-1', {
-      semester: undefined,
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-1', {

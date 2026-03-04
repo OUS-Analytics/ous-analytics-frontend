@@ -17,29 +17,29 @@ export function MigrationFlowBars({ flows }: MigrationFlowBarsProps) {
   const maxCount = flows[0]?.totalCount || 1;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {flows.map((migration, index) => (
         <div
           key={`${migration.fromMajor}-${migration.toMajor}`}
           className="group"
         >
-          <div className="mb-1 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-foreground">
-              <span className="max-w-[120px] truncate font-medium">
+          <div className="mb-2 grid gap-1 text-sm">
+            <div className="grid items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+              <span className="break-words font-medium text-foreground">
                 {migration.fromMajor}
               </span>
-              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-              <span className="max-w-[120px] truncate font-medium">
+              <ArrowRight className="h-4 w-4 shrink-0 text-primary/90 sm:mt-0.5" />
+              <span className="break-words font-medium text-foreground">
                 {migration.toMajor}
               </span>
             </div>
-            <span className="text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground sm:justify-self-end">
               {migration.totalCount.toLocaleString()} students
             </span>
           </div>
-          <div className="h-6 w-full overflow-hidden rounded-md bg-secondary">
+          <div className="h-6 w-full overflow-hidden rounded-lg bg-secondary">
             <div
-              className={`h-full ${BAR_COLORS[index % BAR_COLORS.length]} transition-all duration-500 ease-out group-hover:opacity-80`}
+              className={`h-full ${BAR_COLORS[index % BAR_COLORS.length]} transition-all duration-500 ease-out group-hover:opacity-90`}
               style={{ width: `${(migration.totalCount / maxCount) * 100}%` }}
             />
           </div>

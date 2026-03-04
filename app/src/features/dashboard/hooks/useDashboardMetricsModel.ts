@@ -68,6 +68,21 @@ interface AsyncResourceState<T> {
   error: UIError | null;
 }
 
+interface MigrationDateWindow {
+  startDate: string;
+  endDate: string;
+}
+
+interface MigrationSemesterDateRange {
+  startDate: string;
+  endDate: string;
+}
+
+interface MigrationSemesterRangeSelection {
+  startSemester?: string;
+  endSemester?: string;
+}
+
 type AsyncResourceStateSetter<T> = Dispatch<
   SetStateAction<AsyncResourceState<T>>
 >;
@@ -341,6 +356,8 @@ export function useDashboardMetricsModel() {
   const [migrationSemester, setMigrationSemester] = useState<
     string | undefined
   >(undefined);
+  const [migrationSemesterRange, setMigrationSemesterRange] =
+    useState<MigrationSemesterRangeSelection>({});
   const { filters: majorsFilters, setFilters: setMajorsFilters } =
     useMajorsFiltersParam();
   const [forecastHorizon, setForecastHorizon] = useState(
@@ -803,7 +820,7 @@ export function useDashboardMetricsModel() {
     async (
       datasetId: string | undefined,
       snapshotId: string | undefined,
-      semester: string | undefined,
+      dateWindow: MigrationDateWindow | undefined,
       signal?: AbortSignal
     ) => {
       if (!datasetId) {
@@ -813,15 +830,26 @@ export function useDashboardMetricsModel() {
 
       await loadDashboardResource({
         datasetId,
-        requestKey: `migration:${datasetId}:${snapshotId ?? 'none'}:${semester ?? 'all'}`,
+        requestKey: `migration:${datasetId}:${snapshotId ?? 'none'}:${dateWindow?.startDate ?? 'auto'}:${dateWindow?.endDate ?? 'auto'}`,
         measureKey: 'dashboard:panel:migration:load',
         fallbackMessage: 'Unable to load migration analytics.',
         setResourceState: setMigrationState,
-        request: () =>
-          getMigrationAnalytics(datasetId, {
-            semester,
+        request: () => {
+          const requestOptions: {
+            startDate?: string;
+            endDate?: string;
+            signal?: AbortSignal;
+          } = {
             signal,
-          }),
+          };
+
+          if (dateWindow) {
+            requestOptions.startDate = dateWindow.startDate;
+            requestOptions.endDate = dateWindow.endDate;
+          }
+
+          return getMigrationAnalytics(datasetId, requestOptions);
+        },
       });
     },
     [loadDashboardResource]
@@ -891,7 +919,7 @@ export function useDashboardMetricsModel() {
         loadMigration(
           options.datasetId,
           options.snapshotId ?? undefined,
-          migrationSemester,
+          undefined,
           signal
         ),
         loadForecasts(
@@ -910,7 +938,6 @@ export function useDashboardMetricsModel() {
       loadOverview,
       loadUnfilteredMajors,
       majorsFilters,
-      migrationSemester,
     ]
   );
 
@@ -918,6 +945,86 @@ export function useDashboardMetricsModel() {
   const snapshotCatalogLoaded =
     !snapshotsState.loading && snapshotsState.data !== null;
   const snapshotItems = snapshotsState.data ?? EMPTY_SNAPSHOT_ITEMS;
+  const migrationSemesterDateRanges = useMemo(() => {
+    const ranges = new Map<string, MigrationSemesterDateRange>();
+
+    for (const snapshot of snapshotItems) {
+      const semester = snapshot.academicPeriod?.trim();
+      const effectiveDate = snapshot.effectiveDate;
+
+      if (!semester || !effectiveDate) {
+        continue;
+      }
+
+      const existing = ranges.get(semester);
+      if (!existing) {
+        ranges.set(semester, {
+          startDate: effectiveDate,
+          endDate: effectiveDate,
+        });
+        continue;
+      }
+
+      ranges.set(semester, {
+        startDate:
+          effectiveDate < existing.startDate
+            ? effectiveDate
+            : existing.startDate,
+        endDate:
+          effectiveDate > existing.endDate ? effectiveDate : existing.endDate,
+      });
+    }
+
+    return ranges;
+  }, [snapshotItems]);
+  const snapshotDateBounds = useMemo(() => {
+    let minDate: string | undefined;
+    let maxDate: string | undefined;
+
+    for (const snapshot of snapshotItems) {
+      const effectiveDate = snapshot.effectiveDate;
+      if (!effectiveDate) {
+        continue;
+      }
+
+      if (!minDate || effectiveDate < minDate) {
+        minDate = effectiveDate;
+      }
+      if (!maxDate || effectiveDate > maxDate) {
+        maxDate = effectiveDate;
+      }
+    }
+
+    return {
+      minDate,
+      maxDate,
+    };
+  }, [snapshotItems]);
+  const migrationDateWindow = useMemo<MigrationDateWindow | undefined>(() => {
+    const startSemester = migrationSemesterRange.startSemester;
+    const endSemester = migrationSemesterRange.endSemester;
+
+    if (!startSemester && !endSemester) {
+      return undefined;
+    }
+
+    const startDate =
+      (startSemester
+        ? migrationSemesterDateRanges.get(startSemester)?.startDate
+        : undefined) ?? snapshotDateBounds.minDate;
+    const endDate =
+      (endSemester
+        ? migrationSemesterDateRanges.get(endSemester)?.endDate
+        : undefined) ?? snapshotDateBounds.maxDate;
+
+    if (!startDate || !endDate) {
+      return undefined;
+    }
+
+    return startDate <= endDate
+      ? { startDate, endDate }
+      : { startDate: endDate, endDate: startDate };
+  }, [migrationSemesterDateRanges, migrationSemesterRange, snapshotDateBounds]);
   const hasInvalidDateParamFormat = rawDateParam !== null && dateParam === null;
   const latestSnapshotDateSelection = useMemo(
     () => resolveSnapshotDateSelection(snapshotItems, null),
@@ -1497,7 +1604,7 @@ export function useDashboardMetricsModel() {
     void loadMigration(
       analyticsDatasetId,
       analyticsSnapshotId,
-      migrationSemester,
+      migrationDateWindow,
       controller.signal
     );
 
@@ -1508,7 +1615,7 @@ export function useDashboardMetricsModel() {
     analyticsDatasetId,
     analyticsSnapshotId,
     loadMigration,
-    migrationSemester,
+    migrationDateWindow,
   ]);
 
   useEffect(() => {
@@ -1525,6 +1632,62 @@ export function useDashboardMetricsModel() {
     };
   }, [analyticsDatasetId, analyticsSnapshotId, forecastHorizon, loadForecasts]);
 
+  const setMigrationStartSemester = useCallback(
+    (value: string | undefined) => {
+      setMigrationSemesterRange((previous) => {
+        const nextStartSemester = value;
+        let nextEndSemester = previous.endSemester;
+
+        if (nextStartSemester && nextEndSemester) {
+          const startRange = migrationSemesterDateRanges.get(nextStartSemester);
+          const endRange = migrationSemesterDateRanges.get(nextEndSemester);
+
+          if (
+            startRange &&
+            endRange &&
+            startRange.startDate > endRange.endDate
+          ) {
+            nextEndSemester = nextStartSemester;
+          }
+        }
+
+        return {
+          startSemester: nextStartSemester,
+          endSemester: nextEndSemester,
+        };
+      });
+    },
+    [migrationSemesterDateRanges]
+  );
+
+  const setMigrationEndSemester = useCallback(
+    (value: string | undefined) => {
+      setMigrationSemesterRange((previous) => {
+        let nextStartSemester = previous.startSemester;
+        const nextEndSemester = value;
+
+        if (nextStartSemester && nextEndSemester) {
+          const startRange = migrationSemesterDateRanges.get(nextStartSemester);
+          const endRange = migrationSemesterDateRanges.get(nextEndSemester);
+
+          if (
+            startRange &&
+            endRange &&
+            startRange.startDate > endRange.endDate
+          ) {
+            nextStartSemester = nextEndSemester;
+          }
+        }
+
+        return {
+          startSemester: nextStartSemester,
+          endSemester: nextEndSemester,
+        };
+      });
+    },
+    [migrationSemesterDateRanges]
+  );
+
   useEffect(() => {
     if (!migrationSemester || !migrationState.data) {
       return;
@@ -1535,10 +1698,53 @@ export function useDashboardMetricsModel() {
     }
   }, [migrationSemester, migrationState.data]);
 
+  useEffect(() => {
+    if (!migrationState.data) {
+      return;
+    }
+
+    const semesterOptions = new Set(migrationState.data.semesters);
+
+    setMigrationSemesterRange((previous) => {
+      const nextStartSemester =
+        previous.startSemester && semesterOptions.has(previous.startSemester)
+          ? previous.startSemester
+          : undefined;
+      const nextEndSemester =
+        previous.endSemester && semesterOptions.has(previous.endSemester)
+          ? previous.endSemester
+          : undefined;
+
+      if (
+        nextStartSemester === previous.startSemester &&
+        nextEndSemester === previous.endSemester
+      ) {
+        return previous;
+      }
+
+      return {
+        startSemester: nextStartSemester,
+        endSemester: nextEndSemester,
+      };
+    });
+  }, [migrationState.data]);
+
   const activeMigrationSemester =
     migrationSemester &&
     migrationState.data?.semesters.includes(migrationSemester)
       ? migrationSemester
+      : undefined;
+  const activeMigrationStartSemester =
+    migrationSemesterRange.startSemester &&
+    migrationState.data?.semesters.includes(
+      migrationSemesterRange.startSemester
+    )
+      ? migrationSemesterRange.startSemester
+      : undefined;
+  const activeMigrationEndSemester =
+    migrationSemesterRange.endSemester &&
+    migrationState.data?.semesters.includes(migrationSemesterRange.endSemester)
+      ? migrationSemesterRange.endSemester
       : undefined;
 
   const majorsFilterOptions = useMemo(() => {
@@ -1609,8 +1815,17 @@ export function useDashboardMetricsModel() {
   );
   const retryMigration = useCallback(
     () =>
-      loadMigration(analyticsDatasetId, analyticsSnapshotId, migrationSemester),
-    [analyticsDatasetId, analyticsSnapshotId, loadMigration, migrationSemester]
+      loadMigration(
+        analyticsDatasetId,
+        analyticsSnapshotId,
+        migrationDateWindow
+      ),
+    [
+      analyticsDatasetId,
+      analyticsSnapshotId,
+      loadMigration,
+      migrationDateWindow,
+    ]
   );
   const retryForecasts = useCallback(
     () =>
@@ -1703,6 +1918,10 @@ export function useDashboardMetricsModel() {
     setBreakdownOpen,
     migrationSemester: activeMigrationSemester,
     setMigrationSemester,
+    migrationStartSemester: activeMigrationStartSemester,
+    migrationEndSemester: activeMigrationEndSemester,
+    setMigrationStartSemester,
+    setMigrationEndSemester,
     forecastHorizon,
     setForecastHorizon,
     handleDatasetUpload,

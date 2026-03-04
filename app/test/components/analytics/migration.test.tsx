@@ -74,6 +74,6 @@ describe('migration components', () => {
     ];
 
     render(<MigrationFlowChart data={zeroData} selectedSemester="Fall 2024" />);
-    expect(screen.getByText(/0 students/)).toBeInTheDocument();
+    expect(screen.getAllByText(/0 students/).length).toBeGreaterThan(0);
   });
 });

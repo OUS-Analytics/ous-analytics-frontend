@@ -12,19 +12,21 @@ import type { MigrationRecord } from '@/features/metrics/types';
 interface MigrationTopFlowsTableProps {
   data: MigrationRecord[];
   selectedSemester?: string;
+  periodLabel?: string;
 }
 
 function MigrationTopFlowsTableComponent({
   data,
   selectedSemester,
+  periodLabel: periodLabelOverride,
 }: MigrationTopFlowsTableProps) {
   const sortedMigrations = useMemo(
     () => getTopMigrationFlows(data, selectedSemester, 10),
     [data, selectedSemester]
   );
   const periodLabel = useMemo(
-    () => getMigrationPeriodLabel(selectedSemester),
-    [selectedSemester]
+    () => periodLabelOverride ?? getMigrationPeriodLabel(selectedSemester),
+    [periodLabelOverride, selectedSemester]
   );
 
   return (
@@ -47,19 +49,28 @@ function MigrationTopFlowsTableComponent({
           {sortedMigrations.map((migration, index) => (
             <div
               key={`${migration.fromMajor}-${migration.toMajor}`}
-              className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2"
+              className="rounded-xl border border-border/70 bg-secondary/40 px-3 py-3"
             >
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-start gap-3">
                 <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/20 text-xs font-medium text-primary">
                   {index + 1}
                 </span>
-                <span className="text-foreground">{migration.fromMajor}</span>
-                <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                <span className="text-foreground">{migration.toMajor}</span>
+                <div className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start sm:gap-2">
+                  <span className="break-words text-sm text-foreground">
+                    {migration.fromMajor}
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-primary/90 sm:mt-0.5" />
+                  <span className="break-words text-sm text-foreground">
+                    {migration.toMajor}
+                  </span>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-lg font-semibold leading-none text-chart-1">
+                    {migration.totalCount.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">students</p>
+                </div>
               </div>
-              <span className="text-sm font-medium text-chart-1">
-                {migration.totalCount.toLocaleString()} students
-              </span>
             </div>
           ))}
         </div>

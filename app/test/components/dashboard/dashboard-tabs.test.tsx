@@ -88,6 +88,10 @@ describe('DashboardTabs', () => {
       migrationError: null,
       migrationSemester: 'Fall 2025',
       setMigrationSemester: jest.fn(),
+      migrationStartSemester: 'Fall 2024',
+      migrationEndSemester: 'Spring 2025',
+      setMigrationStartSemester: jest.fn(),
+      setMigrationEndSemester: jest.fn(),
       retryMigration: jest.fn(),
       forecastsData: null,
       forecastsLoading: false,
@@ -140,8 +144,10 @@ describe('DashboardTabs', () => {
     expect(migrationPanelMock).toHaveBeenCalledWith(
       expect.objectContaining({
         data: props.migrationData,
-        migrationSemester: props.migrationSemester,
-        onSemesterChange: props.setMigrationSemester,
+        migrationStartSemester: props.migrationStartSemester,
+        migrationEndSemester: props.migrationEndSemester,
+        onStartSemesterChange: props.setMigrationStartSemester,
+        onEndSemesterChange: props.setMigrationEndSemester,
       })
     );
 

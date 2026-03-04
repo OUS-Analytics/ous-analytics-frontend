@@ -202,6 +202,9 @@ export interface MigrationRecordsResponse {
 
 export interface MigrationOptionsResponse {
   datasetId: string;
+  minEffectiveDate?: string | null;
+  maxEffectiveDate?: string | null;
+  academicPeriods?: string[];
   semesters: string[];
 }
 

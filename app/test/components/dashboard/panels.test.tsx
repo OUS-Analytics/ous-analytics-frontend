@@ -119,14 +119,32 @@ jest.mock('@/features/metrics/components/major-analytics-charts', () => ({
 }));
 
 jest.mock('@/features/metrics/components/charts/MigrationFlowChart', () => ({
-  MigrationFlowChart: ({ data }: { data: unknown[] }) => (
-    <div>{`Migration flow rows: ${data.length}`}</div>
+  MigrationFlowChart: ({
+    data,
+    periodLabel,
+  }: {
+    data: unknown[];
+    periodLabel?: string;
+  }) => (
+    <div>
+      {`Migration flow rows: ${data.length}`}
+      {periodLabel ? <span>{`Flow period: ${periodLabel}`}</span> : null}
+    </div>
   ),
 }));
 
 jest.mock('@/features/metrics/components/MigrationTopFlowsTable', () => ({
-  MigrationTopFlowsTable: ({ data }: { data: unknown[] }) => (
-    <div>{`Migration table rows: ${data.length}`}</div>
+  MigrationTopFlowsTable: ({
+    data,
+    periodLabel,
+  }: {
+    data: unknown[];
+    periodLabel?: string;
+  }) => (
+    <div>
+      {`Migration table rows: ${data.length}`}
+      {periodLabel ? <span>{`Table period: ${periodLabel}`}</span> : null}
+    </div>
   ),
 }));
 
@@ -143,6 +161,30 @@ jest.mock('@/features/filters/components/SemesterFilterSelect', () => ({
     </button>
   ),
 }));
+
+jest.mock(
+  '@/features/filters/components/SemesterRangeFilterSelect',
+  () => ({
+    SemesterRangeFilterSelect: ({
+      options,
+      onStartValueChange,
+      onEndValueChange,
+    }: {
+      options: string[];
+      onStartValueChange: (value: string | undefined) => void;
+      onEndValueChange: (value: string | undefined) => void;
+    }) => (
+      <button
+        onClick={() => {
+          onStartValueChange(options[0]);
+          onEndValueChange(options[options.length - 1]);
+        }}
+      >
+        {`Range options: ${options.length}`}
+      </button>
+    ),
+  })
+);
 
 jest.mock('@/shared/ui/select', () => ({
   Select: ({
@@ -851,18 +893,21 @@ describe('dashboard panel states', () => {
     expect(screen.queryByTestId('majors-filter-panel')).not.toBeInTheDocument();
   });
 
-  test('MigrationPanel handles states and semester change callback', () => {
+  test('MigrationPanel handles states and range change callbacks', () => {
     const onRetry = jest.fn();
     const onReadModelRetry = jest.fn();
-    const onSemesterChange = jest.fn();
+    const onStartSemesterChange = jest.fn();
+    const onEndSemesterChange = jest.fn();
 
     const { rerender } = render(
       <MigrationPanel
         data={null}
         loading={true}
         error={null}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -885,8 +930,10 @@ describe('dashboard panel states', () => {
           retryable: false,
           status: 500,
         }}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -903,8 +950,10 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="processing"
         readModelStatus="building"
@@ -922,8 +971,10 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="processing"
         readModelStatus="building"
@@ -945,8 +996,10 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="failed"
         readModelStatus="failed"
@@ -968,8 +1021,10 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="failed"
         readModelStatus="failed"
@@ -989,8 +1044,10 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        migrationSemester={undefined}
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester={undefined}
+        migrationEndSemester={undefined}
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1012,8 +1069,10 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        migrationSemester="Fall 2025"
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester="Fall 2025"
+        migrationEndSemester="Fall 2025"
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1048,8 +1107,10 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        migrationSemester="Fall 2025"
-        onSemesterChange={onSemesterChange}
+        migrationStartSemester="Fall 2025"
+        migrationEndSemester="Fall 2025"
+        onStartSemesterChange={onStartSemesterChange}
+        onEndSemesterChange={onEndSemesterChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1059,13 +1120,98 @@ describe('dashboard panel states', () => {
       />
     );
 
-    expect(screen.getByText('Semester options: 1')).toBeInTheDocument();
+    expect(screen.getByText('Range options: 1')).toBeInTheDocument();
     expect(screen.getByText('Migration flow rows: 1')).toBeInTheDocument();
     expect(screen.getByText('Migration table rows: 1')).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Semester options: 1' })
+    fireEvent.click(screen.getByRole('button', { name: 'Range options: 1' }));
+    expect(onStartSemesterChange).toHaveBeenCalledWith('Fall 2025');
+    expect(onEndSemesterChange).toHaveBeenCalledWith('Fall 2025');
+  });
+
+  test('MigrationPanel derives period labels for partial ranges and tolerates missing callbacks', () => {
+    const onRetry = jest.fn();
+    const onReadModelRetry = jest.fn();
+    const records = [
+      {
+        fromMajor: 'Biology',
+        toMajor: 'Chemistry',
+        semester: 'Fall 2025',
+        count: 2,
+      },
+    ];
+
+    const { rerender } = render(
+      <MigrationPanel
+        data={{
+          datasetId: 'dataset-1',
+          semesters: ['Fall 2025', 'Spring 2026'],
+          records,
+        }}
+        loading={false}
+        error={null}
+        migrationStartSemester="Fall 2025"
+        migrationEndSemester={undefined}
+        onRetry={onRetry}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={onReadModelRetry}
+      />
     );
-    expect(onSemesterChange).toHaveBeenCalledWith('Fall 2025');
+
+    expect(screen.getByText('Flow period: Fall 2025 onward')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Range options: 2' }));
+
+    rerender(
+      <MigrationPanel
+        data={{
+          datasetId: 'dataset-1',
+          semesters: ['Fall 2025', 'Spring 2026'],
+          records,
+        }}
+        loading={false}
+        error={null}
+        migrationStartSemester={undefined}
+        migrationEndSemester="Spring 2026"
+        onRetry={onRetry}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={onReadModelRetry}
+      />
+    );
+
+    expect(screen.getByText('Flow period: Up to Spring 2026')).toBeInTheDocument();
+    expect(screen.getByText('Table period: Up to Spring 2026')).toBeInTheDocument();
+
+    rerender(
+      <MigrationPanel
+        data={{
+          datasetId: 'dataset-1',
+          semesters: ['Fall 2025', 'Spring 2026'],
+          records,
+        }}
+        loading={false}
+        error={null}
+        migrationStartSemester="Fall 2025"
+        migrationEndSemester="Spring 2026"
+        onRetry={onRetry}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={onReadModelRetry}
+      />
+    );
+
+    expect(
+      screen.getByText('Flow period: Fall 2025 to Spring 2026')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Table period: Fall 2025 to Spring 2026')
+    ).toBeInTheDocument();
   });
 
   test('ForecastsPanel handles states and both growth sign branches', () => {
