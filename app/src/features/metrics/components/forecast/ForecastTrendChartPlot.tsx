@@ -13,11 +13,17 @@ import type { ForecastData } from './types';
 
 interface ForecastTrendChartPlotProps {
   combinedData: ForecastData[];
+  historicalCount: number;
   lastHistoricalPeriod?: string;
 }
 
 interface TooltipFormatterContext {
   payload?: ForecastData;
+}
+
+interface ForecastChartPoint extends ForecastData {
+  historicalTotal: number | null;
+  forecastTotal: number | null;
 }
 
 const tooltipStyle = {
@@ -27,14 +33,34 @@ const tooltipStyle = {
   color: 'oklch(0.95 0 0)',
 };
 
+export const formatForecastYAxisTick = (value: number) => {
+  if (value >= 1_000_000) {
+    const rounded = value / 1_000_000;
+    return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}M`;
+  }
+  if (value >= 1_000) {
+    const rounded = value / 1_000;
+    return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}k`;
+  }
+  return value.toLocaleString();
+};
+
 export function ForecastTrendChartPlot({
   combinedData,
+  historicalCount,
   lastHistoricalPeriod,
 }: ForecastTrendChartPlotProps) {
+  const chartData: ForecastChartPoint[] = combinedData.map((point, index) => ({
+    ...point,
+    historicalTotal: index < historicalCount ? point.total : null,
+    forecastTotal:
+      index >= Math.max(0, historicalCount - 1) ? point.total : null,
+  }));
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
-        data={combinedData}
+        data={chartData}
         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
       >
         <defs>
@@ -66,7 +92,7 @@ export function ForecastTrendChartPlot({
           tick={{ fill: 'oklch(0.65 0 0)', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+          tickFormatter={formatForecastYAxisTick}
         />
         <Tooltip
           contentStyle={tooltipStyle}
@@ -86,17 +112,29 @@ export function ForecastTrendChartPlot({
         />
         <Area
           type="monotone"
-          dataKey="total"
+          dataKey="forecastTotal"
           stroke="transparent"
           fill="url(#forecastGradient)"
+          connectNulls
         />
         <Line
           type="monotone"
-          dataKey="total"
+          dataKey="historicalTotal"
           stroke="oklch(0.70 0.18 170)"
           strokeWidth={2}
           dot={{ fill: 'oklch(0.70 0.18 170)', strokeWidth: 2, r: 4 }}
           activeDot={{ r: 6, fill: 'oklch(0.70 0.18 170)' }}
+          connectNulls
+        />
+        <Line
+          type="monotone"
+          dataKey="forecastTotal"
+          stroke="oklch(0.64 0.12 224)"
+          strokeWidth={2}
+          strokeDasharray="5 5"
+          dot={{ fill: 'oklch(0.64 0.12 224)', strokeWidth: 2, r: 4 }}
+          activeDot={{ r: 6, fill: 'oklch(0.64 0.12 224)' }}
+          connectNulls
         />
       </ComposedChart>
     </ResponsiveContainer>

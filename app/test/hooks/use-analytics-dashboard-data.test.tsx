@@ -3619,7 +3619,8 @@ describe('useDashboardMetricsModel', () => {
         signal: expect.any(Object),
       });
       expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-2', {
-        horizon: 4,
+        range: 'medium',
+        asOfDate: '2026-03-01',
         signal: expect.any(Object),
       });
     });
@@ -4085,7 +4086,8 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenLastCalledWith('dataset-2', {
-      horizon: 4,
+      range: 'medium',
+      asOfDate: '2026-03-01',
       signal: expect.any(Object),
     });
   });
@@ -4181,7 +4183,11 @@ describe('useDashboardMetricsModel', () => {
     expect(mockGetDatasetOverview).not.toHaveBeenCalled();
     expect(mockGetMajorsAnalytics).not.toHaveBeenCalled();
     expect(mockGetMigrationAnalytics).not.toHaveBeenCalled();
-    expect(mockGetForecastsAnalytics).not.toHaveBeenCalled();
+    expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-1', {
+      range: 'medium',
+      asOfDate: '2026-03-05',
+      signal: expect.any(Object),
+    });
   });
 
   test('goToLatestAvailableDate pushes the latest snapshot date from invalid-date empty state', async () => {
@@ -4416,7 +4422,8 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-1', {
-      horizon: 4,
+      range: 'medium',
+      asOfDate: '2026-02-11',
       signal: expect.any(Object),
     });
   });
@@ -4517,7 +4524,8 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-2', {
-      horizon: 4,
+      range: 'medium',
+      asOfDate: '2026-03-01',
       signal: expect.any(Object),
     });
   });
@@ -4614,7 +4622,7 @@ describe('useDashboardMetricsModel', () => {
       signal: expect.any(Object),
     });
     expect(mockGetForecastsAnalytics).toHaveBeenCalledWith('dataset-1', {
-      horizon: 4,
+      range: 'medium',
       signal: expect.any(Object),
     });
   });

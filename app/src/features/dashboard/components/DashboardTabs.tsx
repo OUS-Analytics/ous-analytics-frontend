@@ -6,6 +6,7 @@ import { formatUIErrorMessage } from '@/lib/api/errors';
 import type { DashboardUploadFeedback } from '@/features/dashboard/types/uploadFeedback';
 import type {
   DatasetOverviewResponse,
+  ForecastRange,
   ForecastsAnalyticsResponse,
   MajorsAnalyticsResponse,
   MigrationAnalyticsResponse,
@@ -89,8 +90,8 @@ interface DashboardTabsModel {
   forecastRebuildError?: UIError | null;
   forecastRebuildJob?: SnapshotForecastRebuildJobResponse | null;
   rebuildForecasts?: () => void | Promise<void>;
-  forecastHorizon: number;
-  setForecastHorizon: (horizon: number) => void;
+  forecastRange: ForecastRange;
+  setForecastRange: (range: ForecastRange) => void;
   retryForecasts: () => void;
 }
 
@@ -258,7 +259,7 @@ export function DashboardTabs(props: DashboardTabsProps) {
         </TabsTrigger>
       </TabsList>
 
-      {model.snapshotDateEmptyState ? (
+      {model.snapshotDateEmptyState && activeTab !== 'forecasts' ? (
         <PanelEmptyState
           title={model.snapshotDateEmptyState.title}
           description={model.snapshotDateEmptyState.description}
@@ -332,7 +333,7 @@ export function DashboardTabs(props: DashboardTabsProps) {
           onReadModelRetry={model.retryReadModelState}
         />
       )}
-      {!model.snapshotDateEmptyState && activeTab === 'forecasts' && (
+      {activeTab === 'forecasts' && (
         <ForecastsPanel
           data={model.forecastsData}
           loading={model.forecastsLoading}
@@ -342,8 +343,8 @@ export function DashboardTabs(props: DashboardTabsProps) {
           rebuildError={model.forecastRebuildError ?? null}
           rebuildJob={model.forecastRebuildJob ?? null}
           onRebuildForecasts={model.rebuildForecasts}
-          horizon={model.forecastHorizon}
-          onHorizonChange={model.setForecastHorizon}
+          range={model.forecastRange}
+          onRangeChange={model.setForecastRange}
           onRetry={model.retryForecasts}
           readModelState={model.readModelState}
           readModelStatus={model.readModelStatus}

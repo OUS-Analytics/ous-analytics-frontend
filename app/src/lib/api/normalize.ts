@@ -4,8 +4,11 @@ import type {
   DatasetOverviewResponse,
   DatasetTrendPoint,
   ForecastDataCoverage,
+  ForecastLastObserved,
   ForecastLifecycleError,
   ForecastLifecycleState,
+  ForecastRange,
+  ForecastModelMetadata,
 } from './types';
 export type RawDatasetTrendPoint = DatasetTrendPoint;
 
@@ -133,9 +136,27 @@ export function normalizeDatasetForecastResponse(
       typeof response.fiveYearGrowthPct === 'number'
         ? response.fiveYearGrowthPct
         : null,
+    selectedRange: normalizeForecastRange(response.selectedRange),
+    horizonYears:
+      typeof response.horizonYears === 'number' &&
+      Number.isInteger(response.horizonYears)
+        ? response.horizonYears
+        : null,
+    horizonTerms:
+      typeof response.horizonTerms === 'number' &&
+      Number.isInteger(response.horizonTerms)
+        ? response.horizonTerms
+        : null,
+    termsPerYear:
+      typeof response.termsPerYear === 'number' &&
+      Number.isInteger(response.termsPerYear)
+        ? response.termsPerYear
+        : null,
+    lastObserved: normalizeForecastLastObserved(response.lastObserved),
     historical: response.historical.map(normalizeDatasetTrendPoint),
     forecast: response.forecast.map(normalizeDatasetForecastPoint),
     insights: isRecord(response.insights) ? response.insights : null,
+    model: normalizeForecastModelMetadata(response.model),
     reason: typeof response.reason === 'string' ? response.reason : null,
     suggestedAction:
       typeof response.suggestedAction === 'string'
@@ -149,6 +170,12 @@ function normalizeForecastLifecycleState(
   value: unknown
 ): ForecastLifecycleState {
   return value === 'NEEDS_REBUILD' || value === 'FAILED' ? value : 'READY';
+}
+
+function normalizeForecastRange(value: unknown): ForecastRange | null {
+  return value === 'short' || value === 'medium' || value === 'long'
+    ? value
+    : null;
 }
 
 function normalizeForecastDataCoverage(
@@ -192,5 +219,44 @@ function normalizeForecastLifecycleError(
     code: value.code,
     message: value.message,
     details,
+  };
+}
+
+function normalizeForecastLastObserved(
+  value: unknown
+): ForecastLastObserved | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    typeof value.academicPeriod !== 'string' ||
+    !isFiniteNumber(value.studentCount)
+  ) {
+    return null;
+  }
+
+  return {
+    academicPeriod: value.academicPeriod,
+    studentCount: Math.max(0, Math.round(value.studentCount)),
+  };
+}
+
+function normalizeForecastModelMetadata(
+  value: unknown
+): ForecastModelMetadata | null {
+  if (!isRecord(value) || typeof value.name !== 'string') {
+    return null;
+  }
+
+  if (typeof value.dampedTrend !== 'boolean') {
+    return null;
+  }
+
+  return {
+    name: value.name,
+    trend: typeof value.trend === 'string' ? value.trend : null,
+    seasonal: typeof value.seasonal === 'string' ? value.seasonal : null,
+    dampedTrend: value.dampedTrend,
   };
 }

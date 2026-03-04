@@ -214,6 +214,112 @@ describe('api normalization', () => {
     });
   });
 
+  test('normalizes lastObserved and model metadata when valid and drops invalid values', () => {
+    const normalizedValid = normalizeDatasetForecastResponse({
+      datasetId: 'dataset-model-valid',
+      historical: [],
+      forecast: [],
+      lastObserved: {
+        academicPeriod: 'Spring 2026',
+        studentCount: 101.7,
+      },
+      model: {
+        name: 'Holt',
+        trend: 'add',
+        seasonal: null,
+        dampedTrend: true,
+      },
+    });
+    const normalizedInvalid = normalizeDatasetForecastResponse({
+      datasetId: 'dataset-model-invalid',
+      historical: [],
+      forecast: [],
+      lastObserved: {
+        academicPeriod: 2026,
+        studentCount: '100',
+      } as unknown,
+      model: {
+        name: 'Holt',
+        dampedTrend: 'yes',
+      } as unknown,
+    });
+
+    expect(normalizedValid.lastObserved).toEqual({
+      academicPeriod: 'Spring 2026',
+      studentCount: 102,
+    });
+    expect(normalizedValid.model).toEqual({
+      name: 'Holt',
+      trend: 'add',
+      seasonal: null,
+      dampedTrend: true,
+    });
+    expect(normalizedInvalid.lastObserved).toBeNull();
+    expect(normalizedInvalid.model).toBeNull();
+  });
+
+  test('normalizes resolved horizon metadata when integer fields are provided', () => {
+    const normalized = normalizeDatasetForecastResponse({
+      datasetId: 'dataset-horizon',
+      historical: [],
+      forecast: [],
+      selectedRange: 'medium',
+      horizonYears: 3,
+      horizonTerms: 9,
+      termsPerYear: 3,
+    });
+
+    expect(normalized.selectedRange).toBe('medium');
+    expect(normalized.horizonYears).toBe(3);
+    expect(normalized.horizonTerms).toBe(9);
+    expect(normalized.termsPerYear).toBe(3);
+  });
+
+  test('normalizes forecast range aliases and rejects non-integer horizon fields', () => {
+    const normalizedShort = normalizeDatasetForecastResponse({
+      datasetId: 'dataset-range-short',
+      historical: [],
+      forecast: [],
+      selectedRange: 'short',
+      horizonYears: 1.5,
+      horizonTerms: 2.5,
+      termsPerYear: 2.5,
+    });
+    const normalizedLong = normalizeDatasetForecastResponse({
+      datasetId: 'dataset-range-long',
+      historical: [],
+      forecast: [],
+      selectedRange: 'long',
+      model: {
+        name: 'ETS',
+        trend: null,
+        seasonal: 'add',
+        dampedTrend: false,
+      },
+    });
+    const normalizedInvalid = normalizeDatasetForecastResponse({
+      datasetId: 'dataset-range-invalid',
+      historical: [],
+      forecast: [],
+      selectedRange: 'yearly',
+    });
+
+    expect(normalizedShort.selectedRange).toBe('short');
+    expect(normalizedShort.horizonYears).toBeNull();
+    expect(normalizedShort.horizonTerms).toBeNull();
+    expect(normalizedShort.termsPerYear).toBeNull();
+
+    expect(normalizedLong.selectedRange).toBe('long');
+    expect(normalizedLong.model).toEqual({
+      name: 'ETS',
+      trend: null,
+      seasonal: 'add',
+      dampedTrend: false,
+    });
+
+    expect(normalizedInvalid.selectedRange).toBeNull();
+  });
+
   test('isRawDatasetOverviewResponse validates required trend shape', () => {
     expect(
       isRawDatasetOverviewResponse({

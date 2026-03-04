@@ -5,11 +5,13 @@ import { ForecastChartLegend } from './forecast-chart-legend';
 
 interface ForecastTrendChartCardProps {
   combinedData: ForecastData[];
+  historicalCount: number;
   lastHistoricalPeriod?: string;
 }
 
 export function ForecastTrendChartCard({
   combinedData,
+  historicalCount,
   lastHistoricalPeriod,
 }: ForecastTrendChartCardProps) {
   return (
@@ -26,6 +28,7 @@ export function ForecastTrendChartCard({
         <div className="h-[300px]">
           <ForecastTrendChartPlot
             combinedData={combinedData}
+            historicalCount={historicalCount}
             lastHistoricalPeriod={lastHistoricalPeriod}
           />
         </div>

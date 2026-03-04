@@ -10,12 +10,17 @@ import {
   toApiPath,
   withDatasetCache,
 } from '@/lib/api/service-helpers';
-import type { ForecastsAnalyticsResponse } from '@/lib/api/types';
+import type {
+  ForecastRange,
+  ForecastsAnalyticsResponse,
+} from '@/lib/api/types';
 
-const FORECASTS_QUERY_ALLOWLIST = ['horizon'] as const;
+const FORECASTS_QUERY_ALLOWLIST = ['horizon', 'range', 'asOfDate'] as const;
 
 interface GetForecastsAnalyticsOptions {
   horizon?: number;
+  range?: ForecastRange;
+  asOfDate?: string;
   signal?: AbortSignal;
 }
 
@@ -26,15 +31,23 @@ export async function getForecastsAnalytics(
   const endpoint = toApiPath(
     `/datasets/${encodePathSegment(datasetId)}/forecasts`
   );
+  const baseParams =
+    options.range !== undefined
+      ? { range: options.range }
+      : options.horizon !== undefined
+        ? { horizon: options.horizon }
+        : { range: 'medium' };
+  const params =
+    options.asOfDate !== undefined
+      ? { ...baseParams, asOfDate: options.asOfDate }
+      : baseParams;
 
   const rawResponse = await apiClient.get<unknown>(
     endpoint,
     withDatasetCache(datasetId, {
       query: buildGuardedQuery({
         endpoint,
-        params: {
-          horizon: options.horizon ?? 4,
-        },
+        params,
         allowedKeys: FORECASTS_QUERY_ALLOWLIST,
       }),
       signal: options.signal,

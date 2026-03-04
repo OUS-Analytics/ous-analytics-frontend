@@ -10,35 +10,30 @@ import type { ForecastSectionProps } from './forecast/types';
 function ForecastSectionComponent({
   historicalData,
   forecastData,
+  fiveYearGrowthPct,
   insights: insightTexts,
 }: ForecastSectionProps) {
   const combinedData = useMemo(
-    () => [...historicalData.slice(-6), ...forecastData],
+    () => [
+      ...historicalData.map((point) => ({ ...point, isForecasted: false })),
+      ...forecastData.map((point) => ({ ...point, isForecasted: true })),
+    ],
     [historicalData, forecastData]
   );
-
-  const projectedGrowth = useMemo(() => {
-    const lastHistorical = historicalData[historicalData.length - 1];
-    const lastForecast = forecastData[forecastData.length - 1];
-    if (!lastHistorical || !lastForecast) return 0;
-    return (
-      ((lastForecast.total - lastHistorical.total) / lastHistorical.total) * 100
-    );
-  }, [forecastData, historicalData]);
 
   const insights = useMemo(
     () =>
       buildForecastInsights({
-        projectedGrowth,
+        fiveYearGrowthPct,
         projectedGrowthText: insightTexts?.projectedGrowthText,
         resourcePlanningText: insightTexts?.resourcePlanningText,
         recommendationText: insightTexts?.recommendationText,
       }),
     [
+      fiveYearGrowthPct,
       insightTexts?.projectedGrowthText,
       insightTexts?.recommendationText,
       insightTexts?.resourcePlanningText,
-      projectedGrowth,
     ]
   );
 
@@ -46,6 +41,7 @@ function ForecastSectionComponent({
     <div className="space-y-6">
       <ForecastTrendChartCard
         combinedData={combinedData}
+        historicalCount={historicalData.length}
         lastHistoricalPeriod={historicalData[historicalData.length - 1]?.period}
       />
       <ForecastInsightsGrid insights={insights} />
