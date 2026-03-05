@@ -152,7 +152,10 @@ describe('analytics charts', () => {
     ];
 
     render(
-      <ForecastSection historicalData={trendData} forecastData={longForecastData} />
+      <ForecastSection
+        historicalData={trendData}
+        forecastData={longForecastData}
+      />
     );
 
     expect(screen.getByText('Showing 10 terms')).toBeInTheDocument();
@@ -183,11 +186,72 @@ describe('analytics charts', () => {
       .getAllByText(/^(Spring|Summer|Fall)\s\d{4}$/)
       .map((element) => element.textContent);
 
-    expect(orderedPeriods).toEqual([
-      'Spring 2026',
-      'Fall 2026',
-      'Spring 2027',
-    ]);
+    expect(orderedPeriods).toEqual(['Spring 2026', 'Fall 2026', 'Spring 2027']);
+  });
+
+  test('ForecastSection sorting honors numeric semester metadata and pushes unknown labels to the end', () => {
+    const mixedForecastData = [
+      { period: 'Unknown', total: 1030, isForecasted: true },
+      {
+        period: 'Period A',
+        year: 2026,
+        semester: 1,
+        total: 1010,
+        isForecasted: true,
+      },
+      { period: 'Fall 2026', total: 1020, isForecasted: true },
+    ];
+
+    render(
+      <ForecastSection
+        historicalData={trendData}
+        forecastData={mixedForecastData}
+      />
+    );
+
+    const numbersCard = screen
+      .getByText('Forecasted Numbers')
+      .closest('.bg-card') as HTMLElement;
+    const orderedPeriods = within(numbersCard)
+      .getAllByText(/^(Period A|Fall 2026|Unknown)$/)
+      .map((element) => element.textContent);
+
+    expect(orderedPeriods).toEqual(['Period A', 'Fall 2026', 'Unknown']);
+  });
+
+  test('ForecastSection keeps original order when multiple points share the same sort key', () => {
+    const tiedForecastData = [
+      {
+        period: 'Point B',
+        year: 2026,
+        semester: 1,
+        total: 1020,
+        isForecasted: true,
+      },
+      {
+        period: 'Point A',
+        year: 2026,
+        semester: 1,
+        total: 1010,
+        isForecasted: true,
+      },
+    ];
+
+    render(
+      <ForecastSection
+        historicalData={trendData}
+        forecastData={tiedForecastData}
+      />
+    );
+
+    const numbersCard = screen
+      .getByText('Forecasted Numbers')
+      .closest('.bg-card') as HTMLElement;
+    const orderedPeriods = within(numbersCard)
+      .getAllByText(/^(Point A|Point B)$/)
+      .map((element) => element.textContent);
+
+    expect(orderedPeriods).toEqual(['Point B', 'Point A']);
   });
 
   test('forecast helpers format y-axis values and insight fallbacks for growth directions', () => {
