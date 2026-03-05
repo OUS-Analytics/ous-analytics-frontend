@@ -4,6 +4,7 @@ import { ForecastSection } from '@/features/metrics/components/ForecastSection';
 import { MetricsSummaryCard } from '@/features/metrics/components/MetricsSummaryCard';
 import { formatUIErrorMessage } from '@/lib/api/errors';
 import type {
+  ForecastRange,
   ForecastsAnalyticsResponse,
   SnapshotForecastRebuildJobResponse,
   UIError,
@@ -41,8 +42,8 @@ interface ForecastsPanelProps {
   rebuildError?: UIError | null;
   rebuildJob?: SnapshotForecastRebuildJobResponse | null;
   onRebuildForecasts?: () => void | Promise<void>;
-  horizon: number;
-  onHorizonChange: (horizon: number) => void;
+  range: ForecastRange;
+  onRangeChange: (range: ForecastRange) => void;
   onRetry: () => void;
   readModelState: 'ready' | 'processing' | 'failed';
   readModelStatus: string | null;
@@ -51,7 +52,11 @@ interface ForecastsPanelProps {
   onReadModelRetry: () => void;
 }
 
-const FORECAST_HORIZON_OPTIONS = [2, 4, 6, 8, 12];
+const FORECAST_RANGE_OPTIONS: Array<{ value: ForecastRange; label: string }> = [
+  { value: 'short', label: 'Short Term (1 year)' },
+  { value: 'medium', label: 'Medium Term (2–4 Years)' },
+  { value: 'long', label: 'Long Term (5+ Years)' },
+];
 
 function ForecastsPanelComponent({
   data,
@@ -62,8 +67,8 @@ function ForecastsPanelComponent({
   rebuildError = null,
   rebuildJob = null,
   onRebuildForecasts,
-  horizon,
-  onHorizonChange,
+  range,
+  onRangeChange,
   onRetry,
   readModelState,
   readModelStatus,
@@ -102,20 +107,22 @@ function ForecastsPanelComponent({
             Student forecasts and data-driven insights
           </p>
         </div>
-        <div className="w-full sm:w-[170px]">
+        <div className="w-full sm:w-[220px]">
           <Select
-            value={String(horizon)}
+            value={range}
             onValueChange={(value) => {
-              onHorizonChange(Number(value));
+              if (value === 'short' || value === 'medium' || value === 'long') {
+                onRangeChange(value);
+              }
             }}
           >
-            <SelectTrigger aria-label="Select forecast horizon">
-              <SelectValue placeholder="Forecast horizon" />
+            <SelectTrigger aria-label="Select forecast range">
+              <SelectValue placeholder="Forecast range" />
             </SelectTrigger>
             <SelectContent>
-              {FORECAST_HORIZON_OPTIONS.map((option) => (
-                <SelectItem key={option} value={String(option)}>
-                  {option} semesters
+              {FORECAST_RANGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -330,16 +337,17 @@ function ForecastsPanelComponent({
               title="5-Year Growth"
               value={
                 typeof growthPct === 'number'
-                  ? `${growthPct >= 0 ? '+' : ''}${growthPct}%`
+                  ? `${growthPct >= 0 ? '+' : ''}${growthPct.toFixed(1)}%`
                   : 'Unavailable'
               }
               change={typeof growthPct === 'number' ? growthPct : undefined}
               icon={TrendingUp}
-              description="Since 2019"
+              description="Projected over next 5 years"
             />
             <ForecastSection
               historicalData={data.historical}
               forecastData={data.forecast}
+              fiveYearGrowthPct={growthPct}
               insights={data.insights ?? undefined}
             />
           </>

@@ -197,7 +197,7 @@ jest.mock('@/shared/ui/select', () => ({
     <div>
       <button
         onClick={() => {
-          onValueChange?.('6');
+          onValueChange?.('long');
         }}
       >
         Trigger Select Value
@@ -1217,15 +1217,15 @@ describe('dashboard panel states', () => {
   test('ForecastsPanel handles states and both growth sign branches', () => {
     const onRetry = jest.fn();
     const onReadModelRetry = jest.fn();
-    const onHorizonChange = jest.fn();
+    const onRangeChange = jest.fn();
 
     const { rerender } = render(
       <ForecastsPanel
         data={null}
         loading={true}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1243,8 +1243,8 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={{ code: 'UNKNOWN', message: 'Forecast failed', retryable: true }}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1261,8 +1261,8 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="processing"
         readModelStatus="building"
@@ -1284,8 +1284,8 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="processing"
         readModelStatus="building"
@@ -1303,8 +1303,8 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="failed"
         readModelStatus="failed"
@@ -1327,8 +1327,8 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="failed"
         readModelStatus="failed"
@@ -1350,8 +1350,8 @@ describe('dashboard panel states', () => {
         data={null}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1389,8 +1389,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1399,7 +1399,7 @@ describe('dashboard panel states', () => {
         onReadModelRetry={onReadModelRetry}
       />
     );
-    expect(screen.getByText('5-Year Growth: +8%')).toBeInTheDocument();
+    expect(screen.getByText('5-Year Growth: +8.0%')).toBeInTheDocument();
     expect(screen.getByText('Forecast section: 1/1')).toBeInTheDocument();
 
     rerender(
@@ -1417,8 +1417,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={onHorizonChange}
+        range="medium"
+        onRangeChange={onRangeChange}
         onRetry={onRetry}
         readModelState="ready"
         readModelStatus={null}
@@ -1427,11 +1427,11 @@ describe('dashboard panel states', () => {
         onReadModelRetry={onReadModelRetry}
       />
     );
-    expect(screen.getByText('5-Year Growth: -3%')).toBeInTheDocument();
+    expect(screen.getByText('5-Year Growth: -3.0%')).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', { name: 'Trigger Select Value' })
     );
-    expect(onHorizonChange).toHaveBeenCalledWith(6);
+    expect(onRangeChange).toHaveBeenCalledWith("long");
   });
 
   test('ForecastsPanel READY state shows methodology summary from backend response', () => {
@@ -1470,8 +1470,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1489,6 +1489,116 @@ describe('dashboard panel states', () => {
       screen.getByText('Data coverage: Fall 2023 to Spring 2026')
     ).toBeInTheDocument();
     expect(screen.getByText('Forecast section: 1/1')).toBeInTheDocument();
+  });
+
+  test('ForecastsPanel READY state forwards full long-range forecast horizon', () => {
+    render(
+      <ForecastsPanel
+        data={{
+          datasetId: 'dataset-long-range',
+          state: 'READY',
+          methodologySummary: 'Deterministic long-range forecast.',
+          assumptions: [],
+          dataCoverage: {
+            minAcademicPeriod: 'Fall 2021',
+            maxAcademicPeriod: 'Spring 2026',
+          },
+          historical: [
+            { period: 'Fall 2025', year: 2025, semester: 'Fall', total: 1000 },
+          ],
+          forecast: [
+            {
+              period: 'Fall 2026',
+              year: 2026,
+              semester: 'Fall',
+              total: 1010,
+              isForecasted: true,
+            },
+            {
+              period: 'Spring 2027',
+              year: 2027,
+              semester: 'Spring',
+              total: 1020,
+              isForecasted: true,
+            },
+            {
+              period: 'Fall 2027',
+              year: 2027,
+              semester: 'Fall',
+              total: 1030,
+              isForecasted: true,
+            },
+            {
+              period: 'Spring 2028',
+              year: 2028,
+              semester: 'Spring',
+              total: 1040,
+              isForecasted: true,
+            },
+            {
+              period: 'Fall 2028',
+              year: 2028,
+              semester: 'Fall',
+              total: 1050,
+              isForecasted: true,
+            },
+            {
+              period: 'Spring 2029',
+              year: 2029,
+              semester: 'Spring',
+              total: 1060,
+              isForecasted: true,
+            },
+            {
+              period: 'Fall 2029',
+              year: 2029,
+              semester: 'Fall',
+              total: 1070,
+              isForecasted: true,
+            },
+            {
+              period: 'Spring 2030',
+              year: 2030,
+              semester: 'Spring',
+              total: 1080,
+              isForecasted: true,
+            },
+            {
+              period: 'Fall 2030',
+              year: 2030,
+              semester: 'Fall',
+              total: 1090,
+              isForecasted: true,
+            },
+            {
+              period: 'Spring 2031',
+              year: 2031,
+              semester: 'Spring',
+              total: 1100,
+              isForecasted: true,
+            },
+          ],
+          fiveYearGrowthPct: 12,
+          insights: {
+            projectedGrowthText: 'Projected growth.',
+            resourcePlanningText: 'Plan resources.',
+            recommendationText: 'Recommendation.',
+          },
+        }}
+        loading={false}
+        error={null}
+        range="long"
+        onRangeChange={jest.fn()}
+        onRetry={jest.fn()}
+        readModelState="ready"
+        readModelStatus={null}
+        readModelError={null}
+        readModelPollingTimedOut={false}
+        onReadModelRetry={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Forecast section: 1/10')).toBeInTheDocument();
   });
 
   test('ForecastsPanel NEEDS_REBUILD state shows admin rebuild action and reason', () => {
@@ -1518,8 +1628,8 @@ describe('dashboard panel states', () => {
         rebuildError={null}
         rebuildJob={null}
         onRebuildForecasts={onRebuildForecasts}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1563,8 +1673,8 @@ describe('dashboard panel states', () => {
         loading={false}
         error={null}
         canRebuildForecasts={false}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1607,8 +1717,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1664,8 +1774,8 @@ describe('dashboard panel states', () => {
           error: null,
         }}
         onRebuildForecasts={onRebuildForecasts}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1704,8 +1814,8 @@ describe('dashboard panel states', () => {
         canRebuildForecasts={true}
         rebuildLoading={true}
         onRebuildForecasts={jest.fn()}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1745,8 +1855,8 @@ describe('dashboard panel states', () => {
         canRebuildForecasts={true}
         rebuildLoading={true}
         onRebuildForecasts={jest.fn()}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1790,8 +1900,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1839,8 +1949,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}
@@ -1885,8 +1995,8 @@ describe('dashboard panel states', () => {
         }}
         loading={false}
         error={null}
-        horizon={4}
-        onHorizonChange={jest.fn()}
+        range="medium"
+        onRangeChange={jest.fn()}
         onRetry={jest.fn()}
         readModelState="ready"
         readModelStatus={null}

@@ -14,9 +14,12 @@ export function ForecastNumbersCard({
         <CardTitle className="text-base font-medium text-foreground">
           Forecasted Numbers
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {`Showing ${forecastData.length} terms`}
+        </p>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
           {forecastData.map((forecast) => (
             <div
               key={forecast.period}

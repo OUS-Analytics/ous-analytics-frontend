@@ -220,6 +220,20 @@ export interface ForecastInsights {
   recommendationText: string;
 }
 
+export interface ForecastLastObserved {
+  academicPeriod: string;
+  studentCount: number;
+}
+
+export interface ForecastModelMetadata {
+  name: string;
+  trend?: string | null;
+  seasonal?: string | null;
+  dampedTrend: boolean;
+}
+
+export type ForecastRange = 'short' | 'medium' | 'long';
+
 export type ForecastLifecycleState = 'READY' | 'NEEDS_REBUILD' | 'FAILED';
 
 export interface ForecastDataCoverage {
@@ -240,9 +254,15 @@ export interface DatasetForecastResponse {
   assumptions?: string[];
   dataCoverage?: ForecastDataCoverage | null;
   fiveYearGrowthPct: number | null;
+  selectedRange?: ForecastRange | null;
+  horizonYears?: number | null;
+  horizonTerms?: number | null;
+  termsPerYear?: number | null;
+  lastObserved?: ForecastLastObserved | null;
   historical: DatasetTrendPoint[];
   forecast: DatasetForecastPoint[];
   insights?: ForecastInsights | null;
+  model?: ForecastModelMetadata | null;
   reason?: string | null;
   suggestedAction?: string | null;
   error?: ForecastLifecycleError | null;

@@ -978,7 +978,67 @@ describe('service modules', () => {
     expect(mockApiClient.get).toHaveBeenCalledWith(
       '/api/v1/datasets/dataset-1/forecasts',
       {
-        query: { horizon: 4 },
+        query: { range: 'medium' },
+        signal: undefined,
+        datasetCache: { datasetId: 'dataset-1' },
+      }
+    );
+  });
+
+  test('getForecastsAnalytics forwards explicit range when provided', async () => {
+    mockApiClient.get.mockResolvedValueOnce({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+    });
+
+    await getForecastsAnalytics('dataset-1', { range: 'long' });
+
+    expect(mockApiClient.get).toHaveBeenCalledWith(
+      '/api/v1/datasets/dataset-1/forecasts',
+      {
+        query: { range: 'long' },
+        signal: undefined,
+        datasetCache: { datasetId: 'dataset-1' },
+      }
+    );
+  });
+
+  test('getForecastsAnalytics forwards asOfDate when provided', async () => {
+    mockApiClient.get.mockResolvedValueOnce({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+    });
+
+    await getForecastsAnalytics('dataset-1', {
+      range: 'medium',
+      asOfDate: '2026-03-04',
+    });
+
+    expect(mockApiClient.get).toHaveBeenCalledWith(
+      '/api/v1/datasets/dataset-1/forecasts',
+      {
+        query: { range: 'medium', asOfDate: '2026-03-04' },
+        signal: undefined,
+        datasetCache: { datasetId: 'dataset-1' },
+      }
+    );
+  });
+
+  test('getForecastsAnalytics forwards explicit horizon when range is omitted', async () => {
+    mockApiClient.get.mockResolvedValueOnce({
+      datasetId: 'dataset-1',
+      historical: [],
+      forecast: [],
+    });
+
+    await getForecastsAnalytics('dataset-1', { horizon: 7 });
+
+    expect(mockApiClient.get).toHaveBeenCalledWith(
+      '/api/v1/datasets/dataset-1/forecasts',
+      {
+        query: { horizon: 7 },
         signal: undefined,
         datasetCache: { datasetId: 'dataset-1' },
       }
