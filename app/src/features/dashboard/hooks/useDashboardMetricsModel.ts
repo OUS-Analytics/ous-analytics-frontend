@@ -1132,6 +1132,10 @@ export function useDashboardMetricsModel() {
       ? (activeDatasetId ?? undefined)
       : undefined);
   const selectedSnapshotId = selectedSnapshot?.snapshotId ?? null;
+  const forecastAsOfDate =
+    shouldUseSnapshotSelection && !defaultDateHydrationPending
+      ? (selectedSnapshot?.effectiveDate ?? dateParam)
+      : dateParam;
   // MVP1 no-auth decision: rebuild controls are gated to the non-public admin
   // console route, not the main dashboard page.
   const canRebuildForecasts = false;
@@ -1634,7 +1638,7 @@ export function useDashboardMetricsModel() {
       forecastsDatasetId,
       analyticsSnapshotId,
       forecastRange,
-      dateParam,
+      forecastAsOfDate,
       controller.signal
     );
 
@@ -1645,7 +1649,7 @@ export function useDashboardMetricsModel() {
     forecastsDatasetId,
     analyticsSnapshotId,
     forecastRange,
-    dateParam,
+    forecastAsOfDate,
     loadForecasts,
   ]);
 
@@ -1850,13 +1854,13 @@ export function useDashboardMetricsModel() {
         forecastsDatasetId,
         analyticsSnapshotId,
         forecastRange,
-        dateParam
+        forecastAsOfDate
       ),
     [
       forecastsDatasetId,
       analyticsSnapshotId,
       forecastRange,
-      dateParam,
+      forecastAsOfDate,
       loadForecasts,
     ]
   );
