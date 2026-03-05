@@ -159,6 +159,37 @@ describe('analytics charts', () => {
     expect(screen.getByText('Spring 2031')).toBeInTheDocument();
   });
 
+  test('ForecastSection sorts forecast periods before rendering the numbers card', () => {
+    const unsortedForecastData = [
+      { period: 'Spring 2027', total: 1030, isForecasted: true },
+      { period: 'Fall 2026', total: 1020, isForecasted: true },
+      { period: 'Spring 2026', total: 1010, isForecasted: true },
+    ];
+
+    render(
+      <ForecastSection
+        historicalData={[
+          { period: 'Spring 2024', total: 1100 },
+          { period: 'Fall 2023', total: 1000 },
+        ]}
+        forecastData={unsortedForecastData}
+      />
+    );
+
+    const numbersCard = screen
+      .getByText('Forecasted Numbers')
+      .closest('.bg-card') as HTMLElement;
+    const orderedPeriods = within(numbersCard)
+      .getAllByText(/^(Spring|Summer|Fall)\s\d{4}$/)
+      .map((element) => element.textContent);
+
+    expect(orderedPeriods).toEqual([
+      'Spring 2026',
+      'Fall 2026',
+      'Spring 2027',
+    ]);
+  });
+
   test('forecast helpers format y-axis values and insight fallbacks for growth directions', () => {
     expect(formatForecastYAxisTick(1_000_000)).toBe('1M');
     expect(formatForecastYAxisTick(1_250_000)).toBe('1.3M');
