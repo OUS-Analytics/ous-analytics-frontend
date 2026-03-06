@@ -12,10 +12,20 @@ import {
 } from '@/lib/api/service-helpers';
 import type { DatasetOverviewResponse } from '@/lib/api/types';
 
-const OVERVIEW_QUERY_ALLOWLIST = ['asOfSubmissionId'] as const;
+const OVERVIEW_QUERY_ALLOWLIST = [
+  'asOfSubmissionId',
+  'schemaVersion',
+  'includeUndergraduateInsights',
+  'includeMajorInsights',
+  'includeSchoolInsights',
+] as const;
+const OVERVIEW_SCHEMA_VERSION = '6';
 
 interface GetDatasetOverviewOptions {
   asOfSubmissionId?: string;
+  includeUndergraduateInsights?: boolean;
+  includeMajorInsights?: boolean;
+  includeSchoolInsights?: boolean;
   signal?: AbortSignal;
 }
 
@@ -34,6 +44,11 @@ export async function getDatasetOverview(
         endpoint,
         params: {
           asOfSubmissionId: options.asOfSubmissionId,
+          schemaVersion: OVERVIEW_SCHEMA_VERSION,
+          includeUndergraduateInsights:
+            options.includeUndergraduateInsights ?? true,
+          includeMajorInsights: options.includeMajorInsights ?? true,
+          includeSchoolInsights: options.includeSchoolInsights ?? true,
         },
         allowedKeys: OVERVIEW_QUERY_ALLOWLIST,
       }),

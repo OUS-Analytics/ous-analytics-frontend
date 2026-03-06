@@ -500,6 +500,14 @@ describe('dashboard panel states', () => {
     fireEvent.click(screen.getByRole('button', { name: /Total Students:/ }));
     expect(onBreakdownOpenChange).toHaveBeenCalledWith(true);
 
+    fireEvent.click(screen.getByRole('button', { name: /Active Majors:/ }));
+    expect(screen.getByText('Active Majors Breakdown')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Schools\/Colleges:/ }));
+    expect(screen.getByText('Schools/Colleges Breakdown')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
     fireEvent.click(screen.getByRole('button', { name: 'Upload Dataset' }));
     expect(onDatasetUpload).toHaveBeenCalledTimes(2);
   });

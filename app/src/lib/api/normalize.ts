@@ -1,4 +1,5 @@
 import type {
+  ActiveMajorInsightItem,
   DatasetForecastPoint,
   DatasetForecastResponse,
   DatasetOverviewResponse,
@@ -9,6 +10,10 @@ import type {
   ForecastLifecycleState,
   ForecastRange,
   ForecastModelMetadata,
+  SchoolInsightItem,
+  UndergraduateBreakdownItem,
+  UndergraduateBreakdownInsightItem,
+  UndergraduateBreakdownInsightTopItem,
 } from './types';
 export type RawDatasetTrendPoint = DatasetTrendPoint;
 
@@ -112,8 +117,230 @@ export function normalizeDatasetOverviewResponse(
 ): DatasetOverviewResponse {
   return {
     ...response,
+    undergraduateBreakdown: normalizeUndergraduateBreakdown(
+      response.undergraduateBreakdown
+    ),
+    undergraduateBreakdownInsights: normalizeUndergraduateBreakdownInsights(
+      response.undergraduateBreakdownInsights
+    ),
+    activeMajorInsights: normalizeActiveMajorInsights(
+      response.activeMajorInsights
+    ),
+    schoolInsights: normalizeSchoolInsights(response.schoolInsights),
     trend: response.trend.map(normalizeDatasetTrendPoint),
   };
+}
+
+function normalizeUndergraduateBreakdown(
+  value: unknown
+): UndergraduateBreakdownItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is UndergraduateBreakdownItem => {
+      return (
+        isRecord(item) &&
+        typeof item.studentType === 'string' &&
+        isFiniteNumber(item.total) &&
+        isFiniteNumber(item.international) &&
+        isFiniteNumber(item.nonInternational)
+      );
+    })
+    .map((item) => ({
+      studentType: item.studentType,
+      total: Math.max(0, Math.round(item.total)),
+      international: Math.max(0, Math.round(item.international)),
+      nonInternational: Math.max(0, Math.round(item.nonInternational)),
+    }));
+}
+
+function normalizeUndergraduateBreakdownInsights(
+  value: unknown
+): UndergraduateBreakdownInsightItem[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value
+    .filter((item): item is UndergraduateBreakdownInsightItem => {
+      return (
+        isRecord(item) &&
+        typeof item.studentType === 'string' &&
+        isFiniteNumber(item.total) &&
+        isFiniteNumber(item.shareOfUndergradPct) &&
+        isFiniteNumber(item.international) &&
+        isFiniteNumber(item.nonInternational) &&
+        (item.avgCumulativeGPA === null ||
+          item.avgCumulativeGPA === undefined ||
+          isFiniteNumber(item.avgCumulativeGPA)) &&
+        (item.avgCumulativeCreditsEarned === null ||
+          item.avgCumulativeCreditsEarned === undefined ||
+          isFiniteNumber(item.avgCumulativeCreditsEarned)) &&
+        Array.isArray(item.topMajors) &&
+        Array.isArray(item.topSchools)
+      );
+    })
+    .map((item) => ({
+      studentType: item.studentType,
+      total: Math.max(0, Math.round(item.total)),
+      shareOfUndergradPct: clampPercent(item.shareOfUndergradPct),
+      international: Math.max(0, Math.round(item.international)),
+      nonInternational: Math.max(0, Math.round(item.nonInternational)),
+      avgCumulativeGPA:
+        item.avgCumulativeGPA === null || item.avgCumulativeGPA === undefined
+          ? null
+          : roundToTwo(item.avgCumulativeGPA),
+      avgCumulativeCreditsEarned:
+        item.avgCumulativeCreditsEarned === null ||
+        item.avgCumulativeCreditsEarned === undefined
+          ? null
+          : roundToTwo(item.avgCumulativeCreditsEarned),
+      topMajors: normalizeUndergraduateBreakdownInsightTopItems(item.topMajors),
+      topSchools: normalizeUndergraduateBreakdownInsightTopItems(
+        item.topSchools
+      ),
+    }));
+}
+
+function normalizeUndergraduateBreakdownInsightTopItems(
+  value: unknown
+): UndergraduateBreakdownInsightTopItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is UndergraduateBreakdownInsightTopItem => {
+      return (
+        isRecord(item) &&
+        typeof item.label === 'string' &&
+        isFiniteNumber(item.count) &&
+        isFiniteNumber(item.pctOfGroup)
+      );
+    })
+    .map((item) => ({
+      label: item.label,
+      count: Math.max(0, Math.round(item.count)),
+      pctOfGroup: clampPercent(item.pctOfGroup),
+    }));
+}
+
+function normalizeActiveMajorInsights(
+  value: unknown
+): ActiveMajorInsightItem[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value
+    .filter((item): item is ActiveMajorInsightItem => {
+      return (
+        isRecord(item) &&
+        typeof item.major === 'string' &&
+        isFiniteNumber(item.total) &&
+        isFiniteNumber(item.shareOfActivePct) &&
+        isFiniteNumber(item.international) &&
+        isFiniteNumber(item.nonInternational) &&
+        isFiniteNumber(item.internationalPct) &&
+        (item.avgCumulativeGPA === null ||
+          item.avgCumulativeGPA === undefined ||
+          isFiniteNumber(item.avgCumulativeGPA)) &&
+        (item.avgCumulativeCreditsEarned === null ||
+          item.avgCumulativeCreditsEarned === undefined ||
+          isFiniteNumber(item.avgCumulativeCreditsEarned)) &&
+        Array.isArray(item.topSchools) &&
+        Array.isArray(item.studentTypeMix)
+      );
+    })
+    .map((item) => ({
+      major: item.major,
+      total: Math.max(0, Math.round(item.total)),
+      shareOfActivePct: clampPercent(item.shareOfActivePct),
+      international: Math.max(0, Math.round(item.international)),
+      nonInternational: Math.max(0, Math.round(item.nonInternational)),
+      internationalPct: clampPercent(item.internationalPct),
+      avgCumulativeGPA:
+        item.avgCumulativeGPA === null || item.avgCumulativeGPA === undefined
+          ? null
+          : roundToTwo(item.avgCumulativeGPA),
+      avgCumulativeCreditsEarned:
+        item.avgCumulativeCreditsEarned === null ||
+        item.avgCumulativeCreditsEarned === undefined
+          ? null
+          : roundToTwo(item.avgCumulativeCreditsEarned),
+      topSchools: normalizeUndergraduateBreakdownInsightTopItems(
+        item.topSchools
+      ),
+      studentTypeMix: normalizeUndergraduateBreakdownInsightTopItems(
+        item.studentTypeMix
+      ),
+    }));
+}
+
+function normalizeSchoolInsights(
+  value: unknown
+): SchoolInsightItem[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value
+    .filter((item): item is SchoolInsightItem => {
+      return (
+        isRecord(item) &&
+        typeof item.school === 'string' &&
+        isFiniteNumber(item.total) &&
+        isFiniteNumber(item.shareOfUndergradPct) &&
+        isFiniteNumber(item.international) &&
+        isFiniteNumber(item.nonInternational) &&
+        isFiniteNumber(item.internationalPct) &&
+        isFiniteNumber(item.activeMajorsCount) &&
+        (item.avgCumulativeGPA === null ||
+          item.avgCumulativeGPA === undefined ||
+          isFiniteNumber(item.avgCumulativeGPA)) &&
+        (item.avgCumulativeCreditsEarned === null ||
+          item.avgCumulativeCreditsEarned === undefined ||
+          isFiniteNumber(item.avgCumulativeCreditsEarned)) &&
+        Array.isArray(item.topMajors) &&
+        Array.isArray(item.studentTypeMix)
+      );
+    })
+    .map((item) => ({
+      school: item.school,
+      total: Math.max(0, Math.round(item.total)),
+      shareOfUndergradPct: clampPercent(item.shareOfUndergradPct),
+      international: Math.max(0, Math.round(item.international)),
+      nonInternational: Math.max(0, Math.round(item.nonInternational)),
+      internationalPct: clampPercent(item.internationalPct),
+      avgCumulativeGPA:
+        item.avgCumulativeGPA === null || item.avgCumulativeGPA === undefined
+          ? null
+          : roundToTwo(item.avgCumulativeGPA),
+      avgCumulativeCreditsEarned:
+        item.avgCumulativeCreditsEarned === null ||
+        item.avgCumulativeCreditsEarned === undefined
+          ? null
+          : roundToTwo(item.avgCumulativeCreditsEarned),
+      activeMajorsCount: Math.max(0, Math.round(item.activeMajorsCount)),
+      topMajors: normalizeUndergraduateBreakdownInsightTopItems(item.topMajors),
+      studentTypeMix: normalizeUndergraduateBreakdownInsightTopItems(
+        item.studentTypeMix
+      ),
+    }));
+}
+
+function clampPercent(value: number): number {
+  return roundToOne(Math.max(0, Math.min(100, value)));
+}
+
+function roundToOne(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function roundToTwo(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 export function normalizeDatasetForecastResponse(

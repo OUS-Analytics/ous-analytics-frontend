@@ -168,9 +168,65 @@ export interface StudentTypeCount {
   count: number;
 }
 
+export interface UndergraduateBreakdownItem {
+  studentType: string;
+  total: number;
+  international: number;
+  nonInternational: number;
+}
+
+export interface UndergraduateBreakdownInsightTopItem {
+  label: string;
+  count: number;
+  pctOfGroup: number;
+}
+
+export interface UndergraduateBreakdownInsightItem {
+  studentType: string;
+  total: number;
+  shareOfUndergradPct: number;
+  international: number;
+  nonInternational: number;
+  avgCumulativeGPA: number | null;
+  avgCumulativeCreditsEarned: number | null;
+  topMajors: UndergraduateBreakdownInsightTopItem[];
+  topSchools: UndergraduateBreakdownInsightTopItem[];
+}
+
+export interface ActiveMajorInsightItem {
+  major: string;
+  total: number;
+  shareOfActivePct: number;
+  international: number;
+  nonInternational: number;
+  internationalPct: number;
+  avgCumulativeGPA: number | null;
+  avgCumulativeCreditsEarned: number | null;
+  topSchools: UndergraduateBreakdownInsightTopItem[];
+  studentTypeMix: UndergraduateBreakdownInsightTopItem[];
+}
+
+export interface SchoolInsightItem {
+  school: string;
+  total: number;
+  shareOfUndergradPct: number;
+  international: number;
+  nonInternational: number;
+  internationalPct: number;
+  avgCumulativeGPA: number | null;
+  avgCumulativeCreditsEarned: number | null;
+  activeMajorsCount: number;
+  topMajors: UndergraduateBreakdownInsightTopItem[];
+  studentTypeMix: UndergraduateBreakdownInsightTopItem[];
+}
+
 export interface DatasetOverviewResponse {
   datasetId: string;
   snapshotTotals: SnapshotTotals;
+  undergraduateBreakdown?: UndergraduateBreakdownItem[];
+  undergraduateBreakdownInsights?: UndergraduateBreakdownInsightItem[];
+  activeMajorInsights?: ActiveMajorInsightItem[];
+  schoolInsights?: SchoolInsightItem[];
   activeMajors: number;
   activeSchools: number;
   trend: DatasetTrendPoint[];

@@ -1,8 +1,10 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Building, GraduationCap, Users } from 'lucide-react';
 import { DashboardUploadFeedbackAlert } from '@/features/dashboard/components/DashboardUploadFeedback';
 import type { DashboardUploadFeedback } from '@/features/dashboard/types/uploadFeedback';
+import { ActiveMajorsBreakdownModal } from '@/features/metrics/components/ActiveMajorsBreakdownModal';
 import { AnalyticsBreakdownModal } from '@/features/metrics/components/AnalyticsBreakdownModal';
+import { SchoolsBreakdownModal } from '@/features/metrics/components/SchoolsBreakdownModal';
 import { MetricsTrendChart } from '@/features/metrics/components/charts/MetricsTrendChart';
 import { SchoolDistributionChart } from '@/features/metrics/components/charts/SchoolDistributionChart';
 import { MetricsSummaryCard } from '@/features/metrics/components/MetricsSummaryCard';
@@ -100,6 +102,9 @@ function OverviewPanelComponent({
       year: 'numeric',
     });
   }, [currentDataDate]);
+  const [activeMajorsBreakdownOpen, setActiveMajorsBreakdownOpen] =
+    useState(false);
+  const [schoolsBreakdownOpen, setSchoolsBreakdownOpen] = useState(false);
 
   return (
     <TabsContent value="overview" className="space-y-6">
@@ -178,12 +183,14 @@ function OverviewPanelComponent({
               value={data.activeMajors}
               icon={GraduationCap}
               description="Across all schools"
+              onClick={() => setActiveMajorsBreakdownOpen(true)}
             />
             <MetricsSummaryCard
               title="Schools/Colleges"
               value={data.activeSchools}
               icon={Building}
               description="Academic units"
+              onClick={() => setSchoolsBreakdownOpen(true)}
             />
           </div>
 
@@ -191,6 +198,24 @@ function OverviewPanelComponent({
             open={breakdownOpen}
             onOpenChange={onBreakdownOpenChange}
             data={data.snapshotTotals}
+            undergraduateBreakdown={data.undergraduateBreakdown ?? []}
+            undergraduateBreakdownInsights={
+              data.undergraduateBreakdownInsights ?? []
+            }
+            dateLabel={dateLabel}
+          />
+          <ActiveMajorsBreakdownModal
+            open={activeMajorsBreakdownOpen}
+            onOpenChange={setActiveMajorsBreakdownOpen}
+            activeMajors={data.activeMajors}
+            activeMajorInsights={data.activeMajorInsights ?? []}
+            dateLabel={dateLabel}
+          />
+          <SchoolsBreakdownModal
+            open={schoolsBreakdownOpen}
+            onOpenChange={setSchoolsBreakdownOpen}
+            activeSchools={data.activeSchools}
+            schoolInsights={data.schoolInsights ?? []}
             dateLabel={dateLabel}
           />
           <div className="grid gap-6 lg:grid-cols-2">
