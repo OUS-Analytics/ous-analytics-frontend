@@ -21,6 +21,46 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Docker
+
+The full-stack Compose entrypoint lives in `../backend/docker-compose.yml`.
+
+From `backend/`:
+
+```bash
+docker compose up --build
+```
+
+Detached mode:
+
+```bash
+docker compose up -d
+```
+
+Stop and remove containers/network:
+
+```bash
+docker compose down
+```
+
+Follow logs:
+
+```bash
+docker compose logs -f
+```
+
+Expected URLs:
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8000`
+
+Frontend-only image build (optional):
+
+```bash
+docker build -t ous-frontend .
+docker run --rm -p 3000:3000 --env-file .env.example ous-frontend
+```
+
 ## Required Environment
 
 Frontend runtime requires:
