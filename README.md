@@ -58,7 +58,7 @@ Frontend-only image build (optional):
 
 ```bash
 docker build -t ous-frontend .
-docker run --rm -p 3000:3000 --env-file .env.example ous-frontend
+docker run --rm -p 3000:3000 --env-file .env ous-frontend
 ```
 
 ## Required Environment
