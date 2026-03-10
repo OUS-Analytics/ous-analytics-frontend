@@ -2,7 +2,9 @@ name: Frontend Coverage (PR)
 
 on:
   pull_request:
-    branches: ["main"]
+    branches:
+        - main
+        - uat
 
 permissions:
   contents: read
@@ -54,4 +56,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage-pr
-          path: coverage
+          path: app/coverage
+          if-no-files-found: error
