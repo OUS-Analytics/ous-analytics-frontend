@@ -7,9 +7,9 @@ Next.js frontend for the OUS Analytics dashboard.
 Prerequisites:
 - Node.js `20.9.0` (matches CI)
 - npm
-- Backend running locally (see `../backend/docs/local_development.md`)
+- Backend running locally (see `../ous-analytics-backend/docs/local_development.md`)
 
-From `frontend/`:
+From `ous-analytics-frontend/`:
 
 ```bash
 cd app
@@ -23,9 +23,9 @@ Open `http://localhost:3000`.
 
 ## Docker
 
-The full-stack Compose entrypoint lives in `../backend/docker-compose.yml`.
+The full-stack Compose entrypoint lives in `../ous-analytics-backend/docker-compose.yml`.
 
-From `backend/`:
+From `ous-analytics-backend/`:
 
 ```bash
 docker compose up --build
@@ -122,7 +122,7 @@ Checks:
 curl -i http://localhost:8000/api/v1/health
 ```
 
-If this fails, start/fix backend first (see `../backend/docs/local_development.md`).
+If this fails, start/fix backend first (see `../ous-analytics-backend/docs/local_development.md`).
 
 ### CORS errors in browser
 
@@ -149,6 +149,6 @@ If tabs show processing state for a long time, use panel `Refresh status`. Autom
 ## Backend References
 
 To avoid duplicating backend docs:
-- Backend overview: `../backend/README.md`
-- API surface and contracts: `../backend/docs/api_reference.md`
-- Backend environment/config: `../backend/docs/configuration_and_env.md`
+- Backend overview: `../ous-analytics-backend/README.md`
+- API surface and contracts: `../ous-analytics-backend/docs/api_reference.md`
+- Backend environment/config: `../ous-analytics-backend/docs/configuration_and_env.md`
