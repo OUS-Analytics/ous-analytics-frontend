@@ -102,6 +102,9 @@ const DASHBOARD_TAB_VALUES = [
   'forecasts',
 ] as const;
 
+const DASHBOARD_TAB_TRIGGER_CLASS =
+  'hover:bg-background/80 dark:hover:bg-white dark:hover:text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:bg-white dark:data-[state=active]:text-primary';
+
 type DashboardTabValue = (typeof DASHBOARD_TAB_VALUES)[number];
 
 function isDashboardTabValue(value: string): value is DashboardTabValue {
@@ -233,28 +236,16 @@ export function DashboardTabs(props: DashboardTabsProps) {
         />
       </div>
       <TabsList className="bg-secondary">
-        <TabsTrigger
-          value="overview"
-          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-        >
+        <TabsTrigger value="overview" className={DASHBOARD_TAB_TRIGGER_CLASS}>
           Overview
         </TabsTrigger>
-        <TabsTrigger
-          value="majors"
-          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-        >
+        <TabsTrigger value="majors" className={DASHBOARD_TAB_TRIGGER_CLASS}>
           Majors
         </TabsTrigger>
-        <TabsTrigger
-          value="migration"
-          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-        >
+        <TabsTrigger value="migration" className={DASHBOARD_TAB_TRIGGER_CLASS}>
           Migration
         </TabsTrigger>
-        <TabsTrigger
-          value="forecasts"
-          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-        >
+        <TabsTrigger value="forecasts" className={DASHBOARD_TAB_TRIGGER_CLASS}>
           Forecasts
         </TabsTrigger>
       </TabsList>

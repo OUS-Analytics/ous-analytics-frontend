@@ -600,19 +600,19 @@ describe('major analytics selectors', () => {
   });
 
   test('getCohortColor uses fixed color when known and fallback palette when unknown', () => {
-    expect(getCohortColor('FTIC 2024', 3)).toBe('oklch(0.60 0.22 25)');
+    expect(getCohortColor('FTIC 2024', 3)).toBe('var(--chart-2)');
     expect(getCohortColor('Custom Cohort', 11)).toBe(
       majorChartColors[11 % majorChartColors.length]
     );
   });
 
   test('chart theme constants are exported for tooltip and legacy cohorts', () => {
-    expect(cohortColors['FTIC 2021']).toBe('oklch(0.65 0.20 250)');
+    expect(cohortColors['FTIC 2021']).toBe('var(--chart-1)');
     expect(chartTooltipStyle).toEqual({
-      backgroundColor: 'oklch(0.18 0.01 260)',
-      border: '1px solid oklch(0.28 0.01 260)',
+      backgroundColor: 'var(--popover)',
+      border: '1px solid var(--border)',
       borderRadius: '8px',
-      color: 'oklch(0.95 0 0)',
+      color: 'var(--popover-foreground)',
     });
   });
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import RootLayout, { metadata } from '@/app/layout';
 import DashboardLayout from '@/app/(dashboard)/layout';
+import { ThemeProvider } from '@/shared/components/ThemeProvider';
 import { Analytics } from '@vercel/analytics/next';
 
 describe('RootLayout', () => {
@@ -14,15 +15,21 @@ describe('RootLayout', () => {
     expect(body.type).toBe('body');
 
     const bodyChildren = React.Children.toArray(body.props.children);
-    const hasChild = bodyChildren.some(
+    const hasThemeProvider = bodyChildren.some(
       (child) =>
-        React.isValidElement(child) && child.props.children === 'Child'
+        React.isValidElement(child) &&
+        child.type === ThemeProvider &&
+        child.props.defaultTheme === 'light' &&
+        child.props.enableSystem === false &&
+        child.props.attribute === 'class' &&
+        React.isValidElement(child.props.children) &&
+        child.props.children.props.children === 'Child'
     );
     const hasAnalytics = bodyChildren.some(
       (child) => React.isValidElement(child) && child.type === Analytics
     );
 
-    expect(hasChild).toBe(true);
+    expect(hasThemeProvider).toBe(true);
     expect(hasAnalytics).toBe(true);
   });
 

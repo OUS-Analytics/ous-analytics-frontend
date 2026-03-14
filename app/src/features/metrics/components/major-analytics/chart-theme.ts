@@ -1,21 +1,21 @@
 export const majorChartColors = [
-  'oklch(0.65 0.20 250)',
-  'oklch(0.70 0.18 170)',
-  'oklch(0.75 0.20 85)',
-  'oklch(0.60 0.22 25)',
-  'oklch(0.65 0.15 310)',
-  'oklch(0.58 0.18 220)',
-  'oklch(0.72 0.16 140)',
-  'oklch(0.68 0.19 50)',
-  'oklch(0.62 0.17 280)',
-  'oklch(0.70 0.14 200)',
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'oklch(0.31 0.09 244)',
+  'oklch(0.55 0.17 24)',
+  'oklch(0.68 0.12 246)',
+  'oklch(0.4 0.1 241)',
+  'oklch(0.74 0.14 32)',
 ];
 
 export const cohortColors: Record<string, string> = {
-  'FTIC 2021': 'oklch(0.65 0.20 250)',
-  'FTIC 2022': 'oklch(0.70 0.18 170)',
-  'FTIC 2023': 'oklch(0.75 0.20 85)',
-  'FTIC 2024': 'oklch(0.60 0.22 25)',
+  'FTIC 2021': 'var(--chart-1)',
+  'FTIC 2022': 'var(--chart-3)',
+  'FTIC 2023': 'var(--chart-5)',
+  'FTIC 2024': 'var(--chart-2)',
 };
 
 export function getCohortColor(cohort: string, index: number) {
@@ -24,11 +24,11 @@ export function getCohortColor(cohort: string, index: number) {
   );
 }
 
-const tooltipTextColor = 'oklch(0.95 0 0)';
+const tooltipTextColor = 'var(--popover-foreground)';
 
 export const chartTooltipStyle = {
-  backgroundColor: 'oklch(0.18 0.01 260)',
-  border: '1px solid oklch(0.28 0.01 260)',
+  backgroundColor: 'var(--popover)',
+  border: '1px solid var(--border)',
   borderRadius: '8px',
   color: tooltipTextColor,
 };

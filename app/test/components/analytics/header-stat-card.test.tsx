@@ -13,6 +13,10 @@ describe('analytics header and stat card', () => {
     expect(
       screen.getByText('Howard University OUS Office')
     ).toBeInTheDocument();
+    expect(screen.getByText('HU')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /toggle theme/i })
+    ).toBeInTheDocument();
   });
 
   test('stat card handles change states and click interactions', () => {
